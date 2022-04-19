@@ -96,7 +96,7 @@ inline bool filterInVect(std::vector<GroupFlight::Point> m_inRoute)
  *  \param c - вершина треугольника с индексом "+1" по отношению к искомой вершине. Обьект GroupFlight::Point.
  *  \return Угол между биссектрисой и осью Х. Число с плавающей точкой с двойной точностью (double).
 */
-inline double calcAngle(const GroupFlight::Point a, const GroupFlight::Point b, const GroupFlight::Point c, double angleB)
+inline double calcAngle(const GroupFlight::Point a, const GroupFlight::Point b, const GroupFlight::Point c)
 {
     double result = 0;
     double angle_1 = 0;
@@ -192,20 +192,6 @@ inline double calcAngle(const GroupFlight::Point a, const GroupFlight::Point b, 
         }
     }
 
-    /*if((angle_2 - angle_1) > 0)
-    {
-        result = angle_1 + (angleB / 2);
-    }
-    else if((angle_2 - angle_1) < 0)
-    {
-        result = angle_1 - (angleB / 2);
-    }
-
-    if(abs(angle_2 - angle_1) > GroupFlight::kPi)
-    {
-        result += GroupFlight::kPi;
-    }*/
-
     result = angle_1 + ((angle_2 - angle_1) * GroupFlight::kHalf);  // Расчёт - среднее между двумя углами плюс сдвиг на меньший из углов сторон
 
     if(abs(angle_2 - angle_1) > GroupFlight::kPi)
@@ -231,9 +217,15 @@ inline RegionReduce::Coef calcCoefs(const GroupFlight::Line line)
     return coef;
 }
 
-/*! \brief Расчёт медианы
- *
- *
+/*! \brief Расчёт медианы. Данная функция выполняет расчёт угла между биссектрисой угла текущей вершины и осью x.
+ *  Выполняется расчёт угла на одну сторону треугольника, затем на вторую.
+ *  Результатом является среднее арифметическое этих углов, плюс меньший угол.
+ *  Важно! Данная функция не учитывает ситуацию в которой в массиве могут быть дублирующие точки.
+ *  Пользователь должен исключить применение данной функции с массивом в котором есть дублирующие точки.
+ *  \param a - вершина треугольника с индексом "-1" по отношению к искомой вершине. Обьект GroupFlight::Point.
+ *  \param b - искомая вершина треуголника. Обьект GroupFlight::Point.
+ *  \param c - вершина треугольника с индексом "+1" по отношению к искомой вершине. Обьект GroupFlight::Point.
+ *  \return Угол между медианой и осью Х. Число с плавающей точкой с двойной точностью (double).
 */
 inline double calculAngle(const GroupFlight::Point a, const GroupFlight::Point b, const GroupFlight::Point c)
 {
@@ -278,9 +270,9 @@ inline GroupFlight::Point findIntersectPoint(GroupFlight::Line line1, GroupFligh
  *  \param m_outRoute - вектор точек. Объект std::vector<GroupFlight::Point>.
  *  \return Проверенный вектор точек. Объект std::vector<GroupFlight::Point>.
  */
-inline std::vector<GroupFlight::Point> findOutIntercept(std::vector<GroupFlight::Point> m_outRoute)
+inline bool findOutIntercept(std::vector<GroupFlight::Point> *m_outRoute)
 {
-    int num = m_outRoute.end() - m_outRoute.begin();
+    int num = m_outRoute->size();
     GroupFlight::Point point1;
     GroupFlight::Point point2;
     GroupFlight::Point resultPoint;
@@ -289,38 +281,37 @@ inline std::vector<GroupFlight::Point> findOutIntercept(std::vector<GroupFlight:
 
     for(int i = 0; i < (num - 2); i++)
     {
-        point1 = m_outRoute.at(i);                             // Проверяем пересекаются ли линии n и n + 2
-        line1.p1 = m_outRoute.at(i);
-        line1.p2 = m_outRoute.at(i + 1);
-        line2.p1 = m_outRoute.at(i + 2);
-        if(uint32_t(i + 3) == m_outRoute.size())
+        point1 = m_outRoute->at(i);                             // Проверяем пересекаются ли линии n и n + 2
+        line1.p1 = m_outRoute->at(i);
+        line1.p2 = m_outRoute->at(i + 1);
+        line2.p1 = m_outRoute->at(i + 2);
+        if(uint32_t(i + 3) == m_outRoute->size())
         {
-            point2 = m_outRoute.at(0);
-            line2.p2 = m_outRoute.at(0);
+            point2 = m_outRoute->at(0);
+            line2.p2 = m_outRoute->at(0);
         }
         else
         {
-            point2 = m_outRoute.at(i + 3);
-            line2.p2 = m_outRoute.at(i + 3);
+            point2 = m_outRoute->at(i + 3);
+            line2.p2 = m_outRoute->at(i + 3);
         }
 
         if(GroupFlight::isIntersects(line1, line2))                 // Если обнаружено пересечение...
         {
             resultPoint = findIntersectPoint(line1, line2);
             qDebug() << "message 1";
-            m_outRoute.erase(m_outRoute.begin() + i);             // ...удаляем точки формирующие пересекающие кривые...
-            m_outRoute.erase(m_outRoute.begin() + i);
-            m_outRoute.erase(m_outRoute.begin() + i);
-            m_outRoute.erase(m_outRoute.begin() + i);
+            m_outRoute->erase(m_outRoute->begin() + i);             // ...удаляем точки формирующие пересекающие кривые...
+            m_outRoute->erase(m_outRoute->begin() + i);
+            m_outRoute->erase(m_outRoute->begin() + i);
+            m_outRoute->erase(m_outRoute->begin() + i);
             qDebug() << "message 2";
 
-            m_outRoute.emplace(m_outRoute.begin() + i, point2);           // ...добавляем точки без персечения (см. бриф).
-            m_outRoute.emplace(m_outRoute.begin() + i, resultPoint);
-            m_outRoute.emplace(m_outRoute.begin() + i, point1);
+            m_outRoute->emplace(m_outRoute->begin() + i, point2);           // ...добавляем точки без персечения (см. бриф).
+            m_outRoute->emplace(m_outRoute->begin() + i, resultPoint);
+            m_outRoute->emplace(m_outRoute->begin() + i, point1);
             num--;
         }
     }
-    return m_outRoute;
 }
 
 /*!
@@ -390,7 +381,7 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
     bisLen = deltaTh / (cos(GroupFlight::kHalfPi - GroupFlight::kHalf * angleB));       // Длина биссектрисы
     testLine = 0.1 * deltaTh;   // Длина тест-линии для определения типа угла внутренний/внешний
 
-    bisAngle = calcAngle(pointA, pointB, pointC, angleB);   // Угол биссектрисы относительно оси Х
+    bisAngle = calcAngle(pointA, pointB, pointC);   // Угол биссектрисы относительно оси Х
 
     candidante_1.x = testLine * cos(bisAngle) + pointB.x;   // Две тест-точки. Одна вне полигона, а другая внутри.
     candidante_1.y = testLine * sin(bisAngle) + pointB.y;
@@ -562,8 +553,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 i = -1;
             }
         }
-        /*if(outVals.size() > 3)  // Проверка на "петли" в выходном полигоне
-            outVals = findOutIntercept(outVals);*/
+        if(!filterInVect(outVals))  outVals.clear();
     }
     else
     {
