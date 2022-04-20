@@ -99,10 +99,10 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
 {
     if(event->buttons() == Qt::RightButton)
     {
-        this->pointX = event->position().x();
-        this->pointY = event->position().y();
-        this->tempPoint.x = event->position().x();
-        this->tempPoint.y = event->position().y();
+        this->pointX = event->pos().x();
+        this->pointY = event->pos().y();
+        this->tempPoint.x = event->pos().x();
+        this->tempPoint.y = event->pos().y();
         c->addValue(tempPoint);
         m_inRoute.push_back(tempPoint);
         m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
@@ -110,7 +110,7 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
     }
     else if(event->buttons() == Qt::LeftButton)
     {
-        QPointF clickPoint = event->position();
+        QPoint clickPoint = event->pos();
         GroupFlight::Line distLine;
         distLine.p1 = GroupFlight::Point(clickPoint.x(), clickPoint.y());
         for(uint i = 0; i < m_inRoute.size(); i++)
@@ -129,7 +129,7 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
 {
     if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
     {
-        QPointF clickPoint = event->position();
+        QPoint clickPoint = event->pos();
         m_inRoute.erase(m_inRoute.begin() + curPointIndex);
         m_inRoute.emplace(m_inRoute.begin() + curPointIndex,
                           GroupFlight::Point(clickPoint.x(), clickPoint.y()));

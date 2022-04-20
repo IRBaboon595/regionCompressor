@@ -30,15 +30,6 @@ enum class Status : uint8_t
     ZeroOutsideSharp
 };
 
-//! \brief Coef - коэффициенты линии
-struct Coef
-{
-    double k, b;
-
-    Coef(double _k, double _b): k(_k), b(_b){}
-    Coef(): k(0.), b(0.){}
-};
-
 /*!
  *  \brief Функция работает со вектором исходных точек.
  *  Выполняется проверка на наличие пересечений в исходном полигоне.
@@ -46,23 +37,23 @@ struct Coef
  *  \param m_inRoute - Вектор искомых точек. Объект класса std::vector<GroupFlight::Point>.
  *  \return Булевая величина. True - пересечений в полигоне нет. False - персечения в полигоне есть.
 */
-inline bool filterInVect(std::vector<GroupFlight::Point> m_inRoute)
+inline bool filterVect(std::vector<GroupFlight::Point> m_Route)
 {
-    if(m_inRoute.size() < 3)                                   // Не менее трёх точек - иначе возврат
+    if(m_Route.size() < 3)                                   // Не менее трёх точек - иначе возврат
         return false;
     std::vector<GroupFlight::Line> testVector;
-    uint vectSize = m_inRoute.end() - m_inRoute.begin();
-    uint distance = m_inRoute.end() - m_inRoute.begin();
+    uint vectSize = m_Route.end() - m_Route.begin();
+    uint distance = m_Route.end() - m_Route.begin();
 
     for(uint i = 0; i < distance; i++)                           // Выполняется заполнение тест-вектора линиями на базе точек исходного вектора
     {
         if(i == (distance - 1))
         {
-            testVector.push_back(GroupFlight::Line(m_inRoute.at(i), m_inRoute.at(0)));
+            testVector.push_back(GroupFlight::Line(m_Route.at(i), m_Route.at(0)));
         }
         else
         {
-            testVector.push_back(GroupFlight::Line(m_inRoute.at(i), m_inRoute.at(i + 1)));
+            testVector.push_back(GroupFlight::Line(m_Route.at(i), m_Route.at(i + 1)));
         }
     }
     while(testVector.size() > 2)                                // Выполняется проверка на пересечение линии n с линиями n + 2 + i (где i - порядковый номер в векторе)
@@ -207,9 +198,9 @@ inline double calcAngle(const GroupFlight::Point a, const GroupFlight::Point b, 
  *  \param line - линия. Обьект GroupFlight::Line.
  *  \return Коэффициенты линейного уравнения. Обьект RegionReduce::Coef.
 */
-inline RegionReduce::Coef calcCoefs(const GroupFlight::Line line)
+inline GroupFlight::Coef calcCoefs(const GroupFlight::Line line)
 {
-    RegionReduce::Coef coef;
+    GroupFlight::Coef coef;
 
     coef.k = ((line.p2.y - line.p1.y) / (line.p2.x - line.p1.x));
     coef.b = line.p2.y - coef.k * line.p2.x;
@@ -231,7 +222,7 @@ inline double calculAngle(const GroupFlight::Point a, const GroupFlight::Point b
 {
     double result = 0;
     GroupFlight::Line sideB(c, a);
-    RegionReduce::Coef sideB_coef(calcCoefs(sideB));
+    GroupFlight::Coef sideB_coef(calcCoefs(sideB));
     double x = abs((c.x - a.x) / 2);
     x += (c.x > a.x ? a.x : c.x);
     double y = x * sideB_coef.k + sideB_coef.b;
@@ -251,8 +242,8 @@ inline double calculAngle(const GroupFlight::Point a, const GroupFlight::Point b
  */
 inline GroupFlight::Point findIntersectPoint(GroupFlight::Line line1, GroupFlight::Line line2)
 {
-    RegionReduce::Coef coef_1(calcCoefs(line1).k, calcCoefs(line1).b);
-    RegionReduce::Coef coef_2(calcCoefs(line2).k, calcCoefs(line2).b);
+    GroupFlight::Coef coef_1(calcCoefs(line1).k, calcCoefs(line1).b);
+    GroupFlight::Coef coef_2(calcCoefs(line2).k, calcCoefs(line2).b);
     GroupFlight::Point interceptPoint;
 
     interceptPoint.x = ((coef_2.b - coef_1.b) / (coef_1.k - coef_2.k));
@@ -408,10 +399,10 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
             GroupFlight::Point pointInter_1;
             GroupFlight::Point pointInter_2;
             GroupFlight::Point pointInter_3;
-            RegionReduce::Coef testCoef_1;
-            RegionReduce::Coef testCoef_2;
-            RegionReduce::Coef testCoef_3;
-            RegionReduce::Coef orthCoef;
+            GroupFlight::Coef testCoef_1;
+            GroupFlight::Coef testCoef_2;
+            GroupFlight::Coef testCoef_3;
+            GroupFlight::Coef orthCoef;
             GroupFlight::Line testLine_1;
             GroupFlight::Line testLine_2;
             GroupFlight::Line testLine_3;
@@ -536,7 +527,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
 {
     std::vector<GroupFlight::Point> outVals; // Вектор расчётных величин
     Status state;
-    if(filterInVect(inVals))   // Нет ли пересечений в исходном полигоне
+    if(filterVect(inVals))   // Нет ли пересечений в исходном полигоне
     {
         for(quint32 i = 0; i < inVals.size(); i++)     // Отработка каждой вершины в исходном полигоне
         {
@@ -553,7 +544,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 i = -1;
             }
         }
-        if(!filterInVect(outVals))  outVals.clear();
+        if(!filterVect(outVals))  outVals.clear();
     }
     else
     {
