@@ -406,7 +406,6 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
             GroupFlight::Line testLine_1;
             GroupFlight::Line testLine_2;
             GroupFlight::Line testLine_3;
-            GroupFlight::Line orthLine;
             candidante_2.x = bisLen * cos(bisAngle - GroupFlight::kPi) + pointB.x;
             candidante_2.y = bisLen * sin(bisAngle - GroupFlight::kPi) + pointB.y;
 
@@ -461,7 +460,26 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
     else
     {
         double shortLineLength = (sideA < sideC) ? sideA : sideC;
+        //double longLineLength = (sideA > sideC) ? sideA : sideC;
+        GroupFlight::Coef longLineCoef = calcCoefs((sideA > sideC) ? a_side : c_side);
+        //GroupFlight::Coef shortLineCoef = calcCoefs((sideA < sideC) ? a_side : c_side);
+        GroupFlight::Coef longOrthLineCoef;
         double triangleHeight = shortLineLength * sin(angleB);
+        GroupFlight::Point heightIntersectPoint;
+        //double heightDivC_Side = shortLineLength * cos(angleB);
+
+        longOrthLineCoef.k = -(1 / longLineCoef.k);
+        if(sideA < sideC)
+        {
+            longOrthLineCoef.b = pointC.y - pointC.x * longOrthLineCoef.k;
+        }
+        else
+        {
+            longOrthLineCoef.b = pointA.y - pointA.x * longOrthLineCoef.k;
+        }
+
+        heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longOrthLineCoef.k - longLineCoef.k);
+        heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
 
         if(triangleHeight > (2 * deltaTh))
         {
