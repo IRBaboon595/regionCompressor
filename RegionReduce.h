@@ -414,23 +414,63 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
 
             testLine_1.p1 = pointB;
             testLine_1.p2 = pointInter_1;
-            testCoef_1 = calcCoefs(testLine_1);
-
-            orthCoef.k = - (1 / testCoef_1.k);
-            orthCoef.b = pointInter_1.y - pointInter_1.x * orthCoef.k;
 
             testLine_2.p1 = m_outRoute->back();
             testLine_2.p2 = candidante_2;
-            testCoef_2 = calcCoefs(testLine_2);
 
-            pointInter_2.x = ((orthCoef.b - testCoef_2.b) / (testCoef_2.k - orthCoef.k));
-            pointInter_2.y = orthCoef.k * pointInter_2.x + orthCoef.b;
-            testLine_3.p1 = pointInter_1;
-            testLine_3.p2 = pointInter_2;
-            testCoef_3 = calcCoefs(testLine_3);
+            if(((testLine_1.p1.x - testLine_1.p2.x) != 0) && ((testLine_1.p1.y - testLine_1.p2.y) != 0))
+            {
+                testCoef_1 = calcCoefs(testLine_1);
+                orthCoef.k = - (1 / testCoef_1.k);
+                orthCoef.b = pointInter_1.y - pointInter_1.x * orthCoef.k;
 
-            pointInter_3.x = pointInter_1.x + (pointInter_1.x - pointInter_2.x);
-            pointInter_3.y = testCoef_3.k * pointInter_3.x + testCoef_3.b;
+                if(((testLine_2.p1.x - testLine_2.p2.x) != 0) && ((testLine_2.p1.y - testLine_2.p2.y) != 0))
+                {
+                    testCoef_2 = calcCoefs(testLine_2);
+
+                    pointInter_2.x = ((orthCoef.b - testCoef_2.b) / (testCoef_2.k - orthCoef.k));
+                    pointInter_2.y = orthCoef.k * pointInter_2.x + orthCoef.b;
+                }
+                else if((testLine_2.p1.x - testLine_2.p2.x) == 0)
+                {
+                    pointInter_2.x = testLine_2.p1.x;
+                    pointInter_2.y = orthCoef.k * pointInter_2.x + orthCoef.b;
+                }
+                else if((testLine_2.p1.y - testLine_2.p2.y) == 0)
+                {
+                    testCoef_2 = calcCoefs(testLine_2);
+
+                    pointInter_2.y = testLine_2.p1.y;
+                    pointInter_2.x = (pointInter_2.y - orthCoef.b) / orthCoef.k;
+                }
+
+                testLine_3.p1 = pointInter_1;
+                testLine_3.p2 = pointInter_2;
+                testCoef_3 = calcCoefs(testLine_3);
+
+                pointInter_3.x = pointInter_1.x + (pointInter_1.x - pointInter_2.x);
+                pointInter_3.y = testCoef_3.k * pointInter_3.x + testCoef_3.b;
+            }
+            else if((testLine_1.p1.x - testLine_1.p2.x) == 0)
+            {
+                testCoef_2 = calcCoefs(testLine_2);
+
+                pointInter_2.y = pointInter_1.y;
+                pointInter_2.x = (pointInter_2.y - testCoef_2.b) / testCoef_2.k;
+
+                pointInter_3.x = pointInter_1.x + (pointInter_1.x - pointInter_2.x);
+                pointInter_3.y = pointInter_1.y;
+            }
+            else if((testLine_1.p1.y - testLine_1.p2.y) == 0)
+            {
+                testCoef_2 = calcCoefs(testLine_2);
+
+                pointInter_2.x = pointInter_1.x;
+                pointInter_2.y = testCoef_2.k * pointInter_2.x + testCoef_2.b;
+
+                pointInter_3.x = pointInter_1.x;
+                pointInter_3.y = pointInter_1.y + (pointInter_1.y - pointInter_2.y);
+            }
 
             m_outRoute->push_back(pointInter_2);            // Рассчётная вершина обрезается на расстоянии deltaTh от искомой вершины. Получается две точки.
             m_outRoute->push_back(pointInter_3);
@@ -460,26 +500,61 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
     else
     {
         double shortLineLength = (sideA < sideC) ? sideA : sideC;
-        //double longLineLength = (sideA > sideC) ? sideA : sideC;
-        GroupFlight::Coef longLineCoef = calcCoefs((sideA > sideC) ? a_side : c_side);
-        //GroupFlight::Coef shortLineCoef = calcCoefs((sideA < sideC) ? a_side : c_side);
+        GroupFlight::Coef longLineCoef;
         GroupFlight::Coef longOrthLineCoef;
         double triangleHeight = shortLineLength * sin(angleB);
         GroupFlight::Point heightIntersectPoint;
-        //double heightDivC_Side = shortLineLength * cos(angleB);
 
-        longOrthLineCoef.k = -(1 / longLineCoef.k);
-        if(sideA < sideC)
+        if(sideA > sideC)
         {
-            longOrthLineCoef.b = pointC.y - pointC.x * longOrthLineCoef.k;
+            if(((pointB.x - pointC.x) != 0) && ((pointB.y - pointC.y) != 0))
+            {
+                longLineCoef = calcCoefs(a_side);
+
+                longOrthLineCoef.k = -(1 / longLineCoef.k);
+                longOrthLineCoef.b = pointA.y - pointA.x * longOrthLineCoef.k;
+
+                heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longLineCoef.k - longOrthLineCoef.k);
+                heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
+            }
+            else if((pointB.x - pointC.x) == 0)
+            {
+                heightIntersectPoint.x = pointC.x;
+                heightIntersectPoint.y = pointA.y;
+            }
+            else if((pointB.y - pointC.y) == 0)
+            {
+                longLineCoef = calcCoefs(a_side);
+
+                heightIntersectPoint.x = pointA.x;
+                heightIntersectPoint.y = longLineCoef.b;
+            }
         }
         else
         {
-            longOrthLineCoef.b = pointA.y - pointA.x * longOrthLineCoef.k;
-        }
+            if(((pointB.x - pointA.x) != 0) && ((pointB.y - pointA.y) != 0))
+            {
+                longLineCoef = calcCoefs(c_side);
 
-        heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longOrthLineCoef.k - longLineCoef.k);
-        heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
+                longOrthLineCoef.k = -(1 / longLineCoef.k);
+                longOrthLineCoef.b = pointC.y - pointC.x * longOrthLineCoef.k;
+
+                heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longLineCoef.k - longOrthLineCoef.k);
+                heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
+            }
+            else if((pointB.x - pointA.x) == 0)
+            {
+                heightIntersectPoint.x = pointA.x;
+                heightIntersectPoint.y = pointC.y;
+            }
+            else if((pointB.y - pointA.y) == 0)
+            {
+                longLineCoef = calcCoefs(c_side);
+
+                heightIntersectPoint.x = pointC.x;
+                heightIntersectPoint.y = longLineCoef.b;
+            }
+        }
 
         if(triangleHeight > (2 * deltaTh))
         {
@@ -506,6 +581,7 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
         {
             if(angleB < 0.5)
             {
+                m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
                 return Status::ZeroOutsideSharp;
             }
             else
@@ -557,7 +633,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
             }
             else if(state == Status::ZeroOutsideSharp)
             {
-                inVals.erase(inVals.begin() + i);
+                inVals.erase(inVals.begin() + i + 1);
                 outVals.clear();
                 i = -1;
             }
