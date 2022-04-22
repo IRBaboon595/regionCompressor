@@ -52,6 +52,7 @@ mainwindow::mainwindow(QWidget *parent)
     connect(clear, SIGNAL(clicked()), this, SLOT(clearCanvas()));
     connect(redraw, SIGNAL(clicked()), this, SLOT(redrawPoly()));
     connect(setTh, SIGNAL(clicked()), this, SLOT(setOffset()));
+    connect(this, &mainwindow::repaintSignal, [=]{this->repaint();});
 }
 
 void mainwindow::getArguments(int argc, char *argv[])
@@ -78,7 +79,7 @@ void mainwindow::paintEvent(QPaintEvent *)
     for (GroupFlight::Point &tempPoint : m_inRoute) {
         polyF << QPointF(tempPoint.x, tempPoint.y);
         painter.drawPoint(QPointF(tempPoint.x, tempPoint.y));
-    }    
+    }
     painter.setPen(linePen);
     painter.drawPolygon(polyF);
 
@@ -106,7 +107,7 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
         c->addValue(tempPoint);
         m_inRoute.push_back(tempPoint);
         m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
-        repaint();
+        update();
     }
     else if(event->buttons() == Qt::LeftButton)
     {
@@ -129,18 +130,25 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
 {
     if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
     {
+
         QPoint clickPoint = event->pos();
         m_inRoute.erase(m_inRoute.begin() + curPointIndex);
         m_inRoute.emplace(m_inRoute.begin() + curPointIndex,
                           GroupFlight::Point(clickPoint.x(), clickPoint.y()));
+
         m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
-        repaint();
+
+        //emit repaintSignal();
+
+
     }
+    update();
 }
 
 void mainwindow::mouseReleaseEvent(QMouseEvent *event)
 {
     curPointIndex = BigNum;
+    //repaint();
 }
 
 void mainwindow::redrawPoly()

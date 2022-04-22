@@ -31,6 +31,90 @@ enum class Status : uint8_t
 };
 
 /*!
+ *  \brief Функция проверяет находиться ли точка с некоторой областью внутри полигона.
+ *  Выполняется проверка на наличие пересечений в исходном полигоне.
+ *  В ходе проверки не проверяется пересечение линии с ближайшими соседями по полигону.
+ *  \param m_inRoute - Вектор искомых точек. Объект класса std::vector<GroupFlight::Point>.
+ *  \return Булевая величина. True - пересечений в полигоне нет. False - персечения в полигоне есть.
+*/
+inline bool isRegionContainsPointsReg(GroupFlight::Point a, GroupFlight::Point b, GroupFlight::Point c, GroupFlight::Point point)
+{
+    uint truthCounter = 0;
+    std::vector<GroupFlight::Point> region = {a, b, c};
+
+    if(GroupFlight::isRegionContainsPoint(region, point))   truthCounter++;
+
+    for(uint i = 0; i < 4; i++)
+    {
+        if(i == 0)
+        {
+            point.x += point.x * 0.001;
+        }
+        else if(i == 1)
+        {
+            point.x -= point.x * 0.001;
+        }
+        else if(i == 2)
+        {
+            point.y += point.y * 0.001;
+        }
+        else if(i == 3)
+        {
+            point.y -= point.y * 0.001;
+        }
+
+        if(GroupFlight::isRegionContainsPoint(region, point))   truthCounter++;
+    }
+
+    if(truthCounter != 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+inline bool isRegionContainsPointsReg(std::vector<GroupFlight::Point> region, GroupFlight::Point point)
+{
+    uint truthCounter = 0;
+
+    if(GroupFlight::isRegionContainsPoint(region, point))   truthCounter++;
+
+    for(uint i = 0; i < 4; i++)
+    {
+        if(i == 0)
+        {
+            point.x += point.x * 0.001;
+        }
+        else if(i == 1)
+        {
+            point.x -= point.x * 0.001;
+        }
+        else if(i == 2)
+        {
+            point.y += point.y * 0.001;
+        }
+        else if(i == 3)
+        {
+            point.y -= point.y * 0.001;
+        }
+
+        if(GroupFlight::isRegionContainsPoint(region, point))   truthCounter++;
+    }
+
+    if(truthCounter != 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/*!
  *  \brief Функция работает со вектором исходных точек.
  *  Выполняется проверка на наличие пересечений в исходном полигоне.
  *  В ходе проверки не проверяется пересечение линии с ближайшими соседями по полигону.
@@ -316,7 +400,7 @@ inline bool findOutIntercept(std::vector<GroupFlight::Point> *m_outRoute)
  *  \param *m_outRoute - вектор точек. Указатель на обьект std::vector<GroupFlight::Point>.
  *  \return Статус отработанной вершины. Обьект Enum-класса Status.
  */
-inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight::Point> *m_inRoute, std::vector<GroupFlight::Point> *m_outRoute)
+inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFlight::Point> *m_inRoute, std::vector<GroupFlight::Point> *m_outRoute)
 {
     GroupFlight::Point pointA;                                  // Вершины треугольника заданы точками, углами и рёбрами.
     GroupFlight::Point pointB(m_inRoute->at(pointNum));
@@ -365,8 +449,40 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
     sideA = GroupFlight::lineLength(a_side);
     sideB = GroupFlight::lineLength(b_side);
     sideC = GroupFlight::lineLength(c_side);
-    angleA = acos((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
-    angleB = acos((pow(sideA, 2) + pow(sideC, 2) - pow(sideB, 2))/(2 * sideA * sideC));
+
+    angleA = ((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
+
+    if(angleA > 1)
+    {
+        angleA = 0;
+    }
+    else if(angleA < -1)
+    {
+        angleA = GroupFlight::kPi;
+    }
+    else
+    {
+        angleA = acos(angleA);
+    }
+
+    /*angleA = acos((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
+    angleB = acos((pow(sideA, 2) + pow(sideC, 2) - pow(sideB, 2))/(2 * sideA * sideC));*/
+
+    angleB = ((pow(sideA, 2) + pow(sideC, 2) - pow(sideB, 2))/(2 * sideA * sideC));
+
+    if(angleB > 1)
+    {
+        angleB = 0;
+    }
+    else if(angleB < -1)
+    {
+        angleB = GroupFlight::kPi;
+    }
+    else
+    {
+        angleB = acos(angleB);
+    }
+
     angleC = GroupFlight::kPi - angleB - angleA;                   // Расчёт параметров треугольника закончен
 
     bisLen = deltaTh / (cos(GroupFlight::kHalfPi - GroupFlight::kHalf * angleB));       // Длина биссектрисы
@@ -504,55 +620,97 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
         GroupFlight::Coef longOrthLineCoef;
         double triangleHeight = shortLineLength * sin(angleB);
         GroupFlight::Point heightIntersectPoint;
-
-        if(sideA > sideC)
+        GroupFlight::Line longLine;
+        GroupFlight::Line nextLine;
+        GroupFlight::Coef nextLineCoef;
+        if(m_inRoute->size() > 3)
         {
-            if(((pointB.x - pointC.x) != 0) && ((pointB.y - pointC.y) != 0))
+            if(sideA > sideC)
             {
-                longLineCoef = calcCoefs(a_side);
+                nextLine.p1 = pointA;
 
-                longOrthLineCoef.k = -(1 / longLineCoef.k);
-                longOrthLineCoef.b = pointA.y - pointA.x * longOrthLineCoef.k;
+                if((pointNum - 2) >= 0)
+                {
+                    nextLine.p2 = m_inRoute->at(pointNum - 2);
+                }
+                else
+                {
+                    nextLine.p2 = m_inRoute->at(m_inRoute->size() - abs(pointNum - 2));
+                }
 
-                heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longLineCoef.k - longOrthLineCoef.k);
-                heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
+                longLine = a_side;                
             }
-            else if((pointB.x - pointC.x) == 0)
+            else
             {
-                heightIntersectPoint.x = pointC.x;
-                heightIntersectPoint.y = pointA.y;
-            }
-            else if((pointB.y - pointC.y) == 0)
-            {
-                longLineCoef = calcCoefs(a_side);
+                nextLine.p1 = pointC;
 
-                heightIntersectPoint.x = pointA.x;
-                heightIntersectPoint.y = longLineCoef.b;
-            }
-        }
-        else
-        {
-            if(((pointB.x - pointA.x) != 0) && ((pointB.y - pointA.y) != 0))
-            {
-                longLineCoef = calcCoefs(c_side);
+                if((pointNum + 2) < m_inRoute->size())
+                {
+                    nextLine.p2 = m_inRoute->at(pointNum + 2);
+                }
+                else if((pointNum + 2) == m_inRoute->size())
+                {
+                    nextLine.p2 = m_inRoute->at(0);
+                }
+                else if((pointNum + 2) == (m_inRoute->size() + 1))
+                {
+                    nextLine.p2 = m_inRoute->at(1);
+                }
 
-                longOrthLineCoef.k = -(1 / longLineCoef.k);
-                longOrthLineCoef.b = pointC.y - pointC.x * longOrthLineCoef.k;
-
-                heightIntersectPoint.x = (longOrthLineCoef.b - longLineCoef.b) / (longLineCoef.k - longOrthLineCoef.k);
-                heightIntersectPoint.y = longOrthLineCoef.k * heightIntersectPoint.x + longOrthLineCoef.b;
+                longLine = c_side;                
             }
-            else if((pointB.x - pointA.x) == 0)
-            {
-                heightIntersectPoint.x = pointA.x;
-                heightIntersectPoint.y = pointC.y;
-            }
-            else if((pointB.y - pointA.y) == 0)
-            {
-                longLineCoef = calcCoefs(c_side);
 
-                heightIntersectPoint.x = pointC.x;
-                heightIntersectPoint.y = longLineCoef.b;
+            if(((nextLine.p1.x - nextLine.p2.x) != 0) && ((nextLine.p1.y - nextLine.p2.y) != 0))
+            {
+                nextLineCoef = calcCoefs(nextLine);
+
+                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
+                {
+                    longLineCoef = calcCoefs(longLine);
+
+                    heightIntersectPoint.x = (nextLineCoef.b - longLineCoef.b) / (longLineCoef.k - nextLineCoef.k);
+                    heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
+                }
+                else if((longLine.p1.x - longLine.p2.x) == 0)
+                {
+                    heightIntersectPoint.x = longLine.p1.x;
+                    heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
+                }
+                else if((longLine.p1.y - longLine.p2.y) == 0)
+                {
+                    heightIntersectPoint.y = longLine.p1.y;
+                    heightIntersectPoint.x = (heightIntersectPoint.y - nextLineCoef.b) / nextLineCoef.k;
+                }
+            }
+            else if((nextLine.p1.x - nextLine.p2.x) == 0)
+            {
+                heightIntersectPoint.x = nextLine.p2.x;
+
+                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
+                {
+                    longLineCoef = calcCoefs(longLine);
+
+                    heightIntersectPoint.y = longLineCoef.k * heightIntersectPoint.x + longLineCoef.b;
+                }
+                else if((longLine.p1.y - longLine.p2.y) == 0)
+                {
+                    heightIntersectPoint.y = longLine.p1.y;
+                }
+            }
+            else if((nextLine.p1.y - nextLine.p2.y) == 0)
+            {
+                heightIntersectPoint.y = nextLine.p2.y;
+
+                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
+                {
+                    longLineCoef = calcCoefs(longLine);
+
+                    heightIntersectPoint.x = (heightIntersectPoint.y - longLineCoef.b) / longLineCoef.k;
+                }
+                else if((longLine.p1.x - longLine.p2.x) == 0)
+                {
+                    heightIntersectPoint.x = longLine.p1.x;
+                }
             }
         }
 
@@ -581,7 +739,41 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
         {
             if(angleB < 0.5)
             {
-                m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                if(m_inRoute->size() > 3)
+                {
+                    double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
+                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist > (2 * deltaTh)))
+                    {
+                        if(sideA < sideC)
+                        {
+                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        }
+                        else
+                        {
+                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                            if(pointNum != 0)
+                            {
+                                m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                            }
+                            else
+                            {
+                                m_inRoute->erase(m_inRoute->end() - 1);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }
+                }
+                else
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum);
+                }
+
                 return Status::ZeroOutsideSharp;
             }
             else
@@ -607,6 +799,7 @@ inline Status parseAngle(uint pointNum, double deltaTh, std::vector<GroupFlight:
             }
         }
     }
+
     return Status::Ok;
 }
 
@@ -621,11 +814,15 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
 {
     std::vector<GroupFlight::Point> outVals; // Вектор расчётных величин
     Status state;
+
     if(filterVect(inVals))   // Нет ли пересечений в исходном полигоне
     {
         for(quint32 i = 0; i < inVals.size(); i++)     // Отработка каждой вершины в исходном полигоне
         {
+            if(inVals.size() < 3)   break;
+
             state = parseAngle(i, deltaTh, &inVals, &outVals);
+
             if(state == Status::ZeroInsideSharp)
             {
                 std::rotate(inVals.begin(), inVals.begin() + 1, inVals.end());
@@ -633,11 +830,15 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
             }
             else if(state == Status::ZeroOutsideSharp)
             {
-                inVals.erase(inVals.begin() + i + 1);
                 outVals.clear();
                 i = -1;
             }
         }
+        for(qint32 i = 0; i < outVals.size(); i++)
+        {
+            if(!(GroupFlight::isRegionContainsPoint(inVals, outVals.at(i))))    outVals.erase(outVals.begin() + i);
+        }
+
         if(!filterVect(outVals))  outVals.clear();
     }
     else

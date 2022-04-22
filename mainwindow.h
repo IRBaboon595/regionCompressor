@@ -28,6 +28,7 @@
 #include <QPointF>
 #include <QLineEdit>
 #include "RegionReduce.h"
+#include "QTimer"
 
 #define BigNum 65535
 
@@ -54,6 +55,7 @@ private:
     QPushButton *clear;
     QPushButton *setTh;
     QLineEdit *thEdit;
+    QTimer t;
     compressor *c;
 
     int argc;
@@ -70,6 +72,7 @@ private:
     double m_deltaTh = 0;
 
 signals:
+    void repaintSignal();
 
 public slots:
     void redrawPoly();
