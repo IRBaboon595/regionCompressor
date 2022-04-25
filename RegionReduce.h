@@ -796,7 +796,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
             {
                 if(m_inRoute->size() > 3)
                 {
-                    double dist = GroupFlight::lineLength(GroupFlight::Line(b_side));
+                    double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
                     //dist = deltaTh;
                     if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist > (2 * deltaTh)))
                     {
