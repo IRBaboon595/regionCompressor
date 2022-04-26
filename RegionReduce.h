@@ -834,10 +834,49 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 i = -1;
             }
         }
-        for(qint32 i = 0; i < outVals.size(); i++)
+        for(quint32 i = 0; i < outVals.size(); i++)
         {
             if(!(GroupFlight::isRegionContainsPoint(inVals, outVals.at(i))))    outVals.erase(outVals.begin() + i);
+            if(i != (outVals.size() - 1))
+            {
+                GroupFlight::Line testLine(outVals.at(i), outVals.at(i + 1));
+                GroupFlight::Coef testCoef = calcCoefs(testLine);
+                double deltaX = (outVals.at(i).x - outVals.at(i + 1).x) / 2;
+                double x = 0;
+                if(outVals.at(i).x > outVals.at(i + 1).x)
+                {
+                    x = outVals.at(i).x - deltaX;
+                }
+                else
+                {
+                    x = outVals.at(i).x + deltaX;
+                }
+                GroupFlight::Point testPoint(x, (x * testCoef.k + testCoef.b));
+                if(!(GroupFlight::isRegionContainsPoint(inVals, testPoint)))    outVals.clear();
+            }
+            else
+            {
+                GroupFlight::Line testLine(outVals.at(i), outVals.at(0));
+                GroupFlight::Coef testCoef = calcCoefs(testLine);
+                double deltaX = (outVals.at(i).x - outVals.at(0).x) / 2;
+                double x = 0;
+                if(outVals.at(i).x > outVals.at(0).x)
+                {
+                    x = outVals.at(i).x - deltaX;
+                }
+                else
+                {
+                    x = outVals.at(i).x + deltaX;
+                }
+                GroupFlight::Point testPoint(x, (x * testCoef.k + testCoef.b));
+                if(!(GroupFlight::isRegionContainsPoint(inVals, testPoint)))    outVals.clear();
+            }
         }
+        for(quint32 i = 0; i < inVals.size(); i++)
+        {
+            if((GroupFlight::isRegionContainsPoint(outVals, inVals.at(i))))    outVals.clear();
+        }
+
 
         if(!filterVect(outVals))  outVals.clear();
     }
