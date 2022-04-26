@@ -474,6 +474,20 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     double bisAngle = 0;
     bool pointState = false;
     double testLine = 0;
+    qint32 temp_1 = 0;
+
+    if(pointNum >= 2)
+    {
+        temp_1 = pointNum - 2;
+    }
+    else if(pointNum == 1)
+    {
+        temp_1 = m_inRoute->size() - 1;
+    }
+    else if(pointNum == 0)
+    {
+        temp_1 = m_inRoute->size() - 2;
+    }
 
     a_side.p1 = pointB;
     c_side.p2 = pointB;
@@ -488,7 +502,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     b_side.p2 = pointA;
     c_side.p1 = pointA;
 
-    if(pointNum == (m_inRoute->size() - 1))
+    if(pointNum == qint32(m_inRoute->size() - 1))
     {
         pointC = m_inRoute->front();
     }
@@ -517,9 +531,6 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     {
         angleA = acos(angleA);
     }
-
-    /*angleA = acos((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
-    angleB = acos((pow(sideA, 2) + pow(sideC, 2) - pow(sideB, 2))/(2 * sideA * sideC));*/
 
     angleB = ((pow(sideA, 2) + pow(sideC, 2) - pow(sideB, 2))/(2 * sideA * sideC));
 
@@ -652,7 +663,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
             candidante_2.x = bisLen * cos(bisAngle - GroupFlight::kPi) + pointB.x;
             candidante_2.y = bisLen * sin(bisAngle - GroupFlight::kPi) + pointB.y;
 
-            if(GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1))
+            if((GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
             {
                 resultPoint.x = candidante_1.x;
                 resultPoint.y = candidante_1.y;
@@ -700,15 +711,15 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
             {
                 nextLine.p1 = pointC;
 
-                if((pointNum + 2) < m_inRoute->size())
+                if((pointNum + 2) < qint32(m_inRoute->size()))
                 {
                     nextLine.p2 = m_inRoute->at(pointNum + 2);
                 }
-                else if((pointNum + 2) == m_inRoute->size())
+                else if((pointNum + 2) == qint32(m_inRoute->size()))
                 {
                     nextLine.p2 = m_inRoute->at(0);
                 }
-                else if((pointNum + 2) == (m_inRoute->size() + 1))
+                else if((pointNum + 2) == qint32(m_inRoute->size() + 1))
                 {
                     nextLine.p2 = m_inRoute->at(1);
                 }
@@ -779,7 +790,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
             candidante_2.x = bisLen * cos(bisAngle - GroupFlight::kPi) + pointB.x;
             candidante_2.y = bisLen * sin(bisAngle - GroupFlight::kPi) + pointB.y;
 
-            if(GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1))
+            if((GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
             {
                 resultPoint.x = candidante_1.x;
                 resultPoint.y = candidante_1.y;
@@ -806,7 +817,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                         {
                             m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
                             m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                            if(pointNum == (m_inRoute->size() - 1))
+                            if(pointNum == qint32(m_inRoute->size() - 1))
                             {
                                 m_inRoute->erase(m_inRoute->begin());
                             }
@@ -849,7 +860,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                 candidante_2.x = bisLen * cos(bisAngle - GroupFlight::kPi) + pointB.x;
                 candidante_2.y = bisLen * sin(bisAngle - GroupFlight::kPi) + pointB.y;
 
-                if(GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1))
+                if((GroupFlight::isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
                 {
                     resultPoint.x = candidante_1.x;
                     resultPoint.y = candidante_1.y;
@@ -875,12 +886,14 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
  *  \param deltaTh - желаемое сжатие расчётного полигона. Число с плавающей точкой с двойной точностью (double).
  *  \return Вектор расчётных величин. Объект класса std::vector<GroupFlight::Point>.
  */
-inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point> inVals, double deltaTh)
+inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point> inVals, double deltaTh, bool toggleUnit)
 {
     std::vector<GroupFlight::Point> outVals; // Вектор расчётных величин
     std::vector<GroupFlight::Point> testVals; // Вектор расчётных величин
     GroupFlight::Point testPoint;
     GroupFlight::Line testLine;
+    GroupFlight::Line testLine_1;
+    GroupFlight::Line testLine_2;
     Status state;
 
     if(filterVect(inVals))   // Нет ли пересечений в исходном полигоне
@@ -902,16 +915,10 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 i = -1;
             }
         }
-        for(qint32 i = 0; i < outVals.size(); i++)
-        {
-            if(!(GroupFlight::isRegionContainsPoint(inVals, outVals.at(i))))    outVals.clear();
-        }
-
-        if(!filterVect(outVals))  outVals.clear();
 
         if(outVals.size() > 3)
         {
-            for(qint32 i = 0; i < outVals.size(); i++)
+            for(qint32 i = 0; i < qint32(outVals.size()); i++)
             {
                 testVals = outVals;
                 testPoint = outVals.at(i);
@@ -919,7 +926,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 if(!(GroupFlight::isRegionContainsPoint(testVals, testPoint)))
                 {
                     testLine.p1 = outVals.at(i);
-                    if(i == outVals.size() - 1)
+                    if(i == qint32(outVals.size() - 1))
                     {
                         testLine.p2 = outVals.at(0);
                     }
@@ -928,7 +935,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                         testLine.p2 = outVals.at(i + 1);
                     }
 
-                    if(GroupFlight::lineLength(testLine) <= deltaTh * 2)
+                    if(GroupFlight::lineLength(testLine) <= deltaTh)
                     {
                         outVals.erase(outVals.begin() + i);
                         i--;
@@ -936,6 +943,54 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 }
             }
         }
+
+        if(toggleUnit)
+        {
+            for(size_t i = 0; i < outVals.size(); i++)
+            {
+                if(!(GroupFlight::isRegionContainsPoint(inVals, outVals.at(i))))
+                {
+                    outVals.erase(outVals.begin() + i);
+                    //outVals.clear();
+                    i--;
+                    //break;
+                }
+            }
+
+            for(size_t i = 0; i < outVals.size(); i++)
+            {
+                testLine_1.p1 = outVals.at(i);
+                if(i == outVals.size() - 1)
+                {
+                    testLine_1.p2 = outVals.at(0);
+                }
+                else
+                {
+                    testLine_1.p2 = outVals.at(i + 1);
+                }
+
+                for(size_t t = 0; t < inVals.size(); t++)
+                {
+                    testLine_2.p1 = inVals.at(t);
+                    if(t == inVals.size() - 1)
+                    {
+                        testLine_2.p2 = inVals.at(0);
+                    }
+                    else
+                    {
+                        testLine_2.p2 = inVals.at(t + 1);
+                    }
+
+                    if(GroupFlight::isIntersects(testLine_1, testLine_2))
+                    {
+                        outVals.clear();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(!filterVect(outVals))  outVals.clear();
     }
     else
     {

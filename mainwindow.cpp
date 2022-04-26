@@ -106,7 +106,7 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
         this->tempPoint.y = event->pos().y();
         c->addValue(tempPoint);
         m_inRoute.push_back(tempPoint);
-        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
+        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal);
         update();
     }
     else if(event->buttons() == Qt::LeftButton)
@@ -136,7 +136,7 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
         m_inRoute.emplace(m_inRoute.begin() + curPointIndex,
                           GroupFlight::Point(clickPoint.x(), clickPoint.y()));
 
-        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
+        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal);
 
         //emit repaintSignal();
 
@@ -153,7 +153,8 @@ void mainwindow::mouseReleaseEvent(QMouseEvent *event)
 
 void mainwindow::redrawPoly()
 {
-    m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
+    //m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh);
+    toggleVal = toggleVal == false ? true : false;
 }
 
 void mainwindow::clearCanvas()

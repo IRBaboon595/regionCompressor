@@ -70,6 +70,7 @@ private:
     std::vector<GroupFlight::Point> m_inRoute;
     std::vector<GroupFlight::Point> m_outRoute;
     double m_deltaTh = 0;
+    bool toggleVal = false;
 
 signals:
     void repaintSignal();
