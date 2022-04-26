@@ -12,6 +12,8 @@
 #include <cstring>
 #include <QDebug>
 
+//Test for new pull
+
 /*!
  *  \brief Данный файл содержит набор функций дял расчёта.
  *  Объявленные ниже функции работают с std:vector<GroupFlight::Point>.
