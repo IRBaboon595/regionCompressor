@@ -136,8 +136,8 @@ inline bool filterVect(std::vector<GroupFlight::Point> m_Route)
     if(m_Route.size() < 3)                                   // Не менее трёх точек - иначе возврат
         return false;
     std::vector<GroupFlight::Line> testVector;
-    uint vectSize = m_Route.end() - m_Route.begin();
-    uint distance = m_Route.end() - m_Route.begin();
+    quint32 vectSize = m_Route.end() - m_Route.begin();
+    quint32 distance = m_Route.end() - m_Route.begin();
 
     for(uint i = 0; i < distance; i++)                           // Выполняется заполнение тест-вектора линиями на базе точек исходного вектора
     {
@@ -155,7 +155,7 @@ inline bool filterVect(std::vector<GroupFlight::Point> m_Route)
         if(testVector.size() == vectSize)
             distance--;
         else
-            distance = testVector.size();
+            distance = quint32(testVector.size());
         for(uint i = 2; i < distance; i++)
         {
             if(GroupFlight::isIntersects(testVector.at(0), testVector.at(i)))               // Если обнаружено пересечение, то выходной поток сигнализирует ошибку - возвращается False
@@ -400,7 +400,7 @@ inline GroupFlight::Point findIntersectPoint(GroupFlight::Line line1, GroupFligh
  */
 inline bool findOutIntercept(std::vector<GroupFlight::Point> *m_outRoute)
 {
-    int num = m_outRoute->size();
+    qint32 num = qint32(m_outRoute->size());
     GroupFlight::Point point1;
     GroupFlight::Point point2;
     GroupFlight::Point resultPoint;
@@ -474,20 +474,6 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     double bisAngle = 0;
     bool pointState = false;
     double testLine = 0;
-    qint32 temp_1 = 0;
-
-    if(pointNum >= 2)
-    {
-        temp_1 = pointNum - 2;
-    }
-    else if(pointNum == 1)
-    {
-        temp_1 = m_inRoute->size() - 1;
-    }
-    else if(pointNum == 0)
-    {
-        temp_1 = m_inRoute->size() - 2;
-    }
 
     a_side.p1 = pointB;
     c_side.p2 = pointB;
@@ -811,7 +797,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                 {
                     double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
                     //dist = deltaTh;
-                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist > (2 * deltaTh)))
+                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist >= (1 * deltaTh)) && (sideB >= (1 * deltaTh)))
+                    //if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (sideB >= (2 * deltaTh)))
                     {
                         if(sideA < sideC)
                         {
@@ -840,10 +827,38 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                             }
                         }
                     }
+                    //else if((dist < (2 * deltaTh)) || (sideB < (1.412 * deltaTh)))
+                    //else if((sideB < (1 * deltaTh)))
                     else
                     {
                         m_inRoute->erase(m_inRoute->begin() + pointNum);
+                        if(sideA > sideC)
+                        {
+                            if(pointNum == 0)
+                            {
+                                m_inRoute->erase(m_inRoute->end() - 1);
+                            }
+                            else
+                            {
+                                m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                            }
+                        }
+                        else
+                        {
+                            if(pointNum == m_inRoute->size())
+                            {
+                                m_inRoute->erase(m_inRoute->begin());
+                            }
+                            else
+                            {
+                                m_inRoute->erase(m_inRoute->begin() + pointNum);
+                            }
+                        }
                     }
+                    /*else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }*/
                 }
                 else
                 {
