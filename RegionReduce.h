@@ -905,6 +905,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
 {
     std::vector<GroupFlight::Point> outVals; // Вектор расчётных величин
     std::vector<GroupFlight::Point> testVals; // Вектор расчётных величин
+    std::vector<GroupFlight::Point> testInVals = inVals; // Вектор расчётных величин
     GroupFlight::Point testPoint;
     GroupFlight::Line testLine;
     GroupFlight::Line testLine_1;
@@ -963,7 +964,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
         {
             for(size_t i = 0; i < outVals.size(); i++)
             {
-                if(!(GroupFlight::isRegionContainsPoint(inVals, outVals.at(i))))
+                if(!(GroupFlight::isRegionContainsPoint(testInVals, outVals.at(i))))
                 {
                     outVals.erase(outVals.begin() + i);
                     //outVals.clear();
@@ -984,16 +985,16 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                     testLine_1.p2 = outVals.at(i + 1);
                 }
 
-                for(size_t t = 0; t < inVals.size(); t++)
+                for(size_t t = 0; t < testInVals.size(); t++)
                 {
-                    testLine_2.p1 = inVals.at(t);
-                    if(t == inVals.size() - 1)
+                    testLine_2.p1 = testInVals.at(t);
+                    if(t == testInVals.size() - 1)
                     {
-                        testLine_2.p2 = inVals.at(0);
+                        testLine_2.p2 = testInVals.at(0);
                     }
                     else
                     {
-                        testLine_2.p2 = inVals.at(t + 1);
+                        testLine_2.p2 = testInVals.at(t + 1);
                     }
 
                     if(GroupFlight::isIntersects(testLine_1, testLine_2))

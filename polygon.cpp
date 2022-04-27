@@ -114,6 +114,7 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
     Polygon inVals = *this;
     Polygon outVals; // Вектор расчётных величин
     Polygon testVals; 
+    Polygon testInVals = inVals; // Вектор расчётных величин
     Point testPoint;
     Line testLine;
     Line testLine_1;
@@ -171,7 +172,7 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
 
         for(qint32 i = 0; i < outVals.size(); i++)
         {
-            if(!(inVals.isContains(outVals.at(i))))    
+            if(!(testInVals.isContains(outVals.at(i))))    
             {
                     outVals.erase(outVals.begin() + i);                    
                     i--;                     
@@ -190,16 +191,16 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
                 testLine_1.p2 = outVals.at(i + 1);
             }
 
-            for(size_t t = 0; t < inVals.size(); t++)
+            for(size_t t = 0; t < testInVals.size(); t++)
             {
-                testLine_2.p1 = inVals.at(t);
-                if(t == inVals.size() - 1)
+                testLine_2.p1 = testInVals.at(t);
+                if(t == testInVals.size() - 1)
                 {
-                    testLine_2.p2 = inVals.at(0);
+                    testLine_2.p2 = testInVals.at(0);
                 }
                 else
                 {
-                    testLine_2.p2 = inVals.at(t + 1);
+                    testLine_2.p2 = testInVals.at(t + 1);
                 }
 
                 if(testLine_1.isIntersects(testLine_2))
