@@ -932,7 +932,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
             }
         }
 
-        if(outVals.size() > 3)
+        if(outVals.size() > 3)                                      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh
         {
             for(qint32 i = 0; i < qint32(outVals.size()); i++)
             {
@@ -962,7 +962,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
 
         if(toggleUnit)
         {
-            for(size_t i = 0; i < outVals.size(); i++)
+            for(size_t i = 0; i < outVals.size(); i++)      // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
             {
                 if(!(GroupFlight::isRegionContainsPoint(testInVals, outVals.at(i))))
                 {
@@ -973,7 +973,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                 }
             }
 
-            for(size_t i = 0; i < outVals.size(); i++)
+            for(size_t i = 0; i < outVals.size(); i++)      // Проверяем не пересекаются ли линии внутреннего и внешнего полигонов
             {
                 testLine_1.p1 = outVals.at(i);
                 if(i == outVals.size() - 1)
@@ -1006,7 +1006,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
             }
         }
 
-        if(!filterVect(outVals))  outVals.clear();
+        if(!filterVect(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
     }
     else
     {

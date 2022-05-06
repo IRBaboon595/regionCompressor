@@ -32,4 +32,4 @@ HEADERS += \
 
 QT += widgets
 
-#include(./utility/utility.pri)
+include(./utility/utility.pri)

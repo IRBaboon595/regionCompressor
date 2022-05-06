@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+using namespace util;
+
 mainwindow::mainwindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -76,7 +78,8 @@ void mainwindow::paintEvent(QPaintEvent *)
     pointPen.setCapStyle(Qt::RoundCap);
 
     painter.setPen(pointPen);
-    for (GroupFlight::Point &tempPoint : m_inRoute) {
+    //for (GroupFlight::Point &tempPoint : m_inRoute) {
+    for (util::math::Point &tempPoint : inPoly) {
         polyF << QPointF(tempPoint.x, tempPoint.y);
         painter.drawPoint(QPointF(tempPoint.x, tempPoint.y));
     }
@@ -87,7 +90,8 @@ void mainwindow::paintEvent(QPaintEvent *)
 
     pointPen.setColor(Qt::green);
     painter.setPen(pointPen);
-    for (GroupFlight::Point &tempPoint1 : m_outRoute) {
+    //for (GroupFlight::Point &tempPoint1 : m_outRoute) {
+    for (util::math::Point &tempPoint1 : outPoly) {
         polyFComp << QPointF(tempPoint1.x, tempPoint1.y);
         painter.drawPoint(QPointF(tempPoint1.x, tempPoint1.y));
     }
@@ -100,24 +104,43 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
 {
     if(event->buttons() == Qt::RightButton)
     {
-        this->pointX = event->pos().x();
+        /*this->pointX = event->pos().x();
         this->pointY = event->pos().y();
         this->tempPoint.x = event->pos().x();
         this->tempPoint.y = event->pos().y();
         c->addValue(tempPoint);
         m_inRoute.push_back(tempPoint);
-        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal);
+        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal);*/
+
+        this->tempTestPoint.x = event->pos().x();
+        this->tempTestPoint.y = event->pos().y();
+        inPoly.push_back(tempTestPoint);
+        outPoly = inPoly.adjusted(m_deltaTh);
         update();
     }
     else if(event->buttons() == Qt::LeftButton)
     {
         QPoint clickPoint = event->pos();
-        GroupFlight::Line distLine;
-        distLine.p1 = GroupFlight::Point(clickPoint.x(), clickPoint.y());
-        for(uint i = 0; i < m_inRoute.size(); i++)
+        //GroupFlight::Line distLine;
+        //distLine.p1 = GroupFlight::Point(clickPoint.x(), clickPoint.y());
+
+        /*for(uint i = 0; i < m_inRoute.size(); i++)
         {
             distLine.p2 = m_inRoute.at(i);
             if(GroupFlight::lineLength(distLine) < 5)
+            {
+                curPointIndex = i;
+                qDebug() << curPointIndex;
+            }
+        }*/
+
+        util::math::Line distLine;
+        distLine.p1 = util::math::Point(clickPoint.x(), clickPoint.y());
+
+        for(uint i = 0; i < inPoly.size(); i++)
+        {
+            distLine.p2 = inPoly.at(i);
+            if(distLine.length() < 5)
             {
                 curPointIndex = i;
                 qDebug() << curPointIndex;
@@ -128,9 +151,8 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
 
 void mainwindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
+    /*if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
     {
-
         QPoint clickPoint = event->pos();
         m_inRoute.erase(m_inRoute.begin() + curPointIndex);
         m_inRoute.emplace(m_inRoute.begin() + curPointIndex,
@@ -139,8 +161,19 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
         m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal);
 
         //emit repaintSignal();
+    }
+    update();*/
 
+    if((inPoly.size() >= 3) && (curPointIndex != BigNum))
+    {
+        QPoint clickPoint = event->pos();
+        inPoly.erase(inPoly.begin() + curPointIndex);
+        inPoly.emplace(inPoly.begin() + curPointIndex,
+                       util::math::Point(clickPoint.x(), clickPoint.y()));
 
+        outPoly = inPoly.adjusted(m_deltaTh);
+
+        //emit repaintSignal();
     }
     update();
 }
@@ -164,6 +197,9 @@ void mainwindow::clearCanvas()
     m_outRoute.clear();
     c->clearAll();
     m_deltaTh = 10;
+
+    inPoly.clear();
+    outPoly.clear();
 }
 
 void mainwindow::setOffset()

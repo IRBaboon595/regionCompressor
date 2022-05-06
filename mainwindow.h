@@ -29,6 +29,7 @@
 #include <QLineEdit>
 #include "RegionReduce.h"
 #include "QTimer"
+#include "utility/math/polygon.h"
 
 #define BigNum 65535
 
@@ -65,10 +66,13 @@ private:
     int pointY = 0;
     uint curPointIndex = BigNum;
 
-    GroupFlight::Point tempPoint;
+    GroupFlight::Point  tempPoint;
+    util::math::Point   tempTestPoint;
 
     std::vector<GroupFlight::Point> m_inRoute;
     std::vector<GroupFlight::Point> m_outRoute;
+    util::math::Polygon inPoly;
+    util::math::Polygon outPoly;
     double m_deltaTh = 0;
     bool toggleVal = false;
 

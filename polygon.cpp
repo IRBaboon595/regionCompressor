@@ -1,5 +1,8 @@
 #include "polygon.h"
-#include "../math.h"
+#include "utility/math/point.h"
+#include "utility/math.h"
+
+using namespace util::math;
 
 util::math::Rect util::math::Polygon::boundingRect() const
 {
@@ -135,14 +138,13 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
                 i--;
             }
             else if(state == Status::ZeroOutsideSharp)
-            {
-                inVals.erase(inVals.begin() + i + 1);
+            {                
                 outVals.clear();
                 i = -1;
             }
         }
 
-        if(outVals.size() > 3)                               
+        if(outVals.size() > 3)      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh                         
         {
             for(qint32 i = 0; i < outVals.size(); i++)
             {
@@ -170,7 +172,7 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
             }
         }
 
-        for(qint32 i = 0; i < outVals.size(); i++)
+        for(qint32 i = 0; i < outVals.size(); i++)  // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
         {
             if(!(testInVals.isContains(outVals.at(i))))    
             {
@@ -376,7 +378,7 @@ double util::math::Polygon::calcAngle(const Point &a, const Point &b, const Poin
 inline bool isRegionContainsPointsReg(Point a, Point b, Point c, Point point)
 {
     uint truthCounter = 0;
-    Polygon region = {a, b, c};
+    Polygon region = std::vector<Point>({a, b, c});
 
     if(region.isContains(point))   truthCounter++;
 
@@ -468,7 +470,7 @@ inline bool isRegionContainsPointsReg(Polygon region, Point point)
  *  \param *m_outRoute - вектор точек. Указатель на обьект std::vector<GroupFlight::Point>.
  *  \return Статус отработанной вершины. Обьект Enum-класса Status.
 */
-Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_inRoute, Polygon *m_outRoute) const
+Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_inRoute, Polygon *m_outRoute) const
 {
     //if (m_inRoute->size() <= pointNum) return;  // patch
     Point pointA;                                  // Вершины треугольника заданы точками, углами и рёбрами.
@@ -530,7 +532,7 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
     }
     else if(angleA < -1)
     {
-        angleA = GroupFlight::kPi;
+        angleA = constants::kPi<double>();
     }
     else
     {
@@ -545,14 +547,14 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
     }
     else if(angleB < -1)
     {
-        angleB = GroupFlight::kPi;
+        angleB = constants::kPi<double>();
     }
     else
     {
         angleB = acos(angleB);
     }
 
-    angleC = GroupFlight::kPi - angleB - angleA;                   // Расчёт параметров треугольника закончен
+    angleC = constants::kPi<double>() - angleB - angleA;                   // Расчёт параметров треугольника закончен
 
     bisLen = deltaTh / (cos(constants::kHalfPi<double>() - 0.5 * angleB));       // Длина биссектрисы
     testLine = 0.1 * deltaTh;   // Длина тест-линии для определения типа угла внутренний/внешний
@@ -685,14 +687,14 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
     else
     {
         double shortLineLength = (sideA < sideC) ? sideA : sideC;
-        GroupFlight::Coef longLineCoef;
-        GroupFlight::Coef longOrthLineCoef;
+        LineEquation longLineCoef;
+        LineEquation longOrthLineCoef;
         double triangleHeight = shortLineLength * sin(angleB);
-        GroupFlight::Point heightIntersectPoint;
-        GroupFlight::Line longLine;
-        GroupFlight::Line shortLine;
-        GroupFlight::Line nextLine;
-        GroupFlight::Coef nextLineCoef;
+        Point heightIntersectPoint;
+        Line longLine;
+        Line shortLine;
+        Line nextLine;
+        LineEquation nextLineCoef;
 
         if(m_inRoute->size() > 3)
         {
@@ -735,11 +737,11 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
 
             if(((nextLine.p1.x - nextLine.p2.x) != 0) && ((nextLine.p1.y - nextLine.p2.y) != 0))
             {
-                nextLineCoef = calcCoefs(nextLine);
+                nextLineCoef = nextLine.equation();
 
                 if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
                 {
-                    longLineCoef = calcCoefs(longLine);
+                    longLineCoef = longLine.equation();
 
                     heightIntersectPoint.x = (nextLineCoef.b - longLineCoef.b) / (longLineCoef.k - nextLineCoef.k);
                     heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
@@ -761,7 +763,7 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
 
                 if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
                 {
-                    longLineCoef = calcCoefs(longLine);
+                    longLineCoef = longLine.equation();
 
                     heightIntersectPoint.y = longLineCoef.k * heightIntersectPoint.x + longLineCoef.b;
                 }
@@ -776,7 +778,7 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
 
                 if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
                 {
-                    longLineCoef = calcCoefs(longLine);
+                    longLineCoef = longLine.equation();
 
                     heightIntersectPoint.x = (heightIntersectPoint.y - longLineCoef.b) / longLineCoef.k;
                 }
@@ -878,6 +880,7 @@ Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Polygon *m_
                 }
 
                 return Status::ZeroOutsideSharp;
+            }
             else
             {
                 candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
