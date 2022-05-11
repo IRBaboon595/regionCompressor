@@ -124,6 +124,66 @@ inline bool isRegionContainsPointsReg(std::vector<GroupFlight::Point> region, Gr
     }
 }
 
+/*inline std::vector<GroupFlight::Point> filterLittleDistances(std::vector<GroupFlight::Point> *route, quint32 pointNum, double deltaTh)
+{
+    std::vector<GroupFlight::Point> testRoute = *route;
+    GroupFlight::Point pointA;                                  // Вершины треугольника заданы точками, углами и рёбрами.
+    GroupFlight::Point pointB(route->at(pointNum));
+    GroupFlight::Point pointC;
+    GroupFlight::Line a_side;
+    GroupFlight::Line b_side;
+    GroupFlight::Line c_side;
+    double sideA = 0;
+    double sideB = 0;
+    double sideC = 0;
+
+    for(quint32 i = 0; route->size(); i++)
+    {
+
+    }
+
+    if(route->size() > 3)
+        {
+            testRoute.erase(testRoute.begin() + pointNum);
+
+            if(!isRegionContainsPointsReg(testRoute, pointB))
+            {
+                if((sideA < deltaTh) || (sideC < deltaTh))
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    return Status::ZeroOutsideSharp;
+                }
+            }
+            else
+            {
+                if(sideA < deltaTh)
+                {
+                    if(pointNum == (m_inRoute->size() - 1))
+                    {
+                        m_inRoute->erase(m_inRoute->begin());
+                    }
+                    else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }
+                    return Status::ZeroOutsideSharp;
+                }
+                else if(sideC < deltaTh)
+                {
+                    if(pointNum != 0)
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                    }
+                    else
+                    {
+                        m_inRoute->erase(m_inRoute->end() - 1);
+                    }
+                    return Status::ZeroOutsideSharp;
+                }
+            }
+        }
+}*/
+
 /*!
  *  \brief Функция работает со вектором исходных точек.
  *  Выполняется проверка на наличие пересечений в исходном полигоне.
@@ -474,6 +534,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     double bisAngle = 0;
     bool pointState = false;
     double testLine = 0;
+    std::vector<GroupFlight::Point> testPolygon = *m_inRoute;
 
     a_side.p1 = pointB;
     c_side.p2 = pointB;
@@ -502,6 +563,47 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
     sideA = GroupFlight::lineLength(a_side);
     sideB = GroupFlight::lineLength(b_side);
     sideC = GroupFlight::lineLength(c_side);
+
+    if(m_inRoute->size() > 3)
+    {
+        testPolygon.erase(testPolygon.begin() + pointNum);
+
+        if(!isRegionContainsPointsReg(testPolygon, pointB))
+        {
+            if((sideA < deltaTh) || (sideC < deltaTh))
+            {
+                m_inRoute->erase(m_inRoute->begin() + pointNum);
+                return Status::ZeroOutsideSharp;
+            }
+        }
+        else
+        {
+            if(sideA < deltaTh)
+            {
+                if(pointNum == qint32(m_inRoute->size() - 1))
+                {
+                    m_inRoute->erase(m_inRoute->begin());
+                }
+                else
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum);
+                }
+                return Status::ZeroOutsideSharp;
+            }
+            else if(sideC < deltaTh)
+            {
+                if(pointNum != 0)
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                }
+                else
+                {
+                    m_inRoute->erase(m_inRoute->end() - 1);
+                }
+                return Status::ZeroOutsideSharp;
+            }
+        }
+    }
 
     angleA = ((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
 
@@ -681,6 +783,45 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
             {
                 nextLine.p1 = pointA;
 
+                longLine = a_side;
+                shortLine = c_side;
+            }
+            else
+            {
+                nextLine.p1 = pointC;
+
+                longLine = c_side;
+                shortLine = a_side;
+            }
+
+            if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
+            {
+                longLineCoef = calcCoefs(longLine);
+
+                nextLineCoef.k = -1 / longLineCoef.k;
+                nextLineCoef.b = nextLine.p1.y - nextLine.p1.x * nextLineCoef.k;
+
+                heightIntersectPoint.x = (nextLineCoef.b - longLineCoef.b) / (longLineCoef.k - nextLineCoef.k);
+                heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
+            }
+            else if((longLine.p1.x - longLine.p2.x) == 0)
+            {
+                heightIntersectPoint.x = longLine.p2.x;
+                heightIntersectPoint.y = nextLine.p1.y;
+            }
+            else if((longLine.p1.y - longLine.p2.y) == 0)
+            {
+                heightIntersectPoint.y = longLine.p2.y;
+                heightIntersectPoint.x = nextLine.p1.x;
+            }
+        }
+
+        /*if(m_inRoute->size() > 3)
+        {
+            if(sideA > sideC)
+            {
+                nextLine.p1 = pointA;
+
                 if((pointNum - 2) >= 0)
                 {
                     nextLine.p2 = m_inRoute->at(pointNum - 2);
@@ -766,7 +907,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                     heightIntersectPoint.x = longLine.p1.x;
                 }
             }
-        }
+        }*/
 
         if(triangleHeight > (2 * deltaTh))
         {
@@ -791,11 +932,11 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
         }
         else
         {
-            if(angleB < 0.5)
+            if(angleB < 1.04)
             {
                 if(m_inRoute->size() > 3)
                 {
-                    double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
+                    /*double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
                     //dist = deltaTh;
                     if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist >= (1 * deltaTh)) && (sideB >= (1 * deltaTh)))
                     //if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (sideB >= (2 * deltaTh)))
@@ -859,6 +1000,32 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                     {
                         m_inRoute->erase(m_inRoute->begin() + pointNum);
                     }*/
+                    if(sideA < sideC)
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(pointNum == qint32(m_inRoute->size() - 1))
+                        {
+                            m_inRoute->erase(m_inRoute->begin());
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        }
+                    }
+                    else
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(pointNum != 0)
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->end() - 1);
+                        }
+                    }
                 }
                 else
                 {
@@ -901,7 +1068,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
  *  \param deltaTh - желаемое сжатие расчётного полигона. Число с плавающей точкой с двойной точностью (double).
  *  \return Вектор расчётных величин. Объект класса std::vector<GroupFlight::Point>.
  */
-inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point> inVals, double deltaTh, bool toggleUnit)
+inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point> inVals, double deltaTh, bool toggleUnit, std::vector<GroupFlight::Point> *testRouteP)
 {
     std::vector<GroupFlight::Point> outVals; // Вектор расчётных величин
     std::vector<GroupFlight::Point> testVals; // Вектор расчётных величин
@@ -1007,6 +1174,12 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
         }
 
         if(!filterVect(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
+
+        testRouteP->clear();
+        for(auto pointTemp : inVals)
+        {
+            testRouteP->push_back(pointTemp);
+        }
     }
     else
     {

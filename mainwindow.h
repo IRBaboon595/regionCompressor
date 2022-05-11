@@ -71,10 +71,11 @@ private:
 
     std::vector<GroupFlight::Point> m_inRoute;
     std::vector<GroupFlight::Point> m_outRoute;
+    std::vector<GroupFlight::Point> m_testRoute;
     util::math::Polygon inPoly;
     util::math::Polygon outPoly;
     double m_deltaTh = 0;
-    bool toggleVal = false;
+    bool toggleVal = true;
 
 signals:
     void repaintSignal();
