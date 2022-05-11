@@ -812,9 +812,9 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
         }
         else
         {
-            if(angleB < 0.5)
+            if(angleB < 0.3)
             {
-                if(m_inRoute->size() > 3)
+                /*if(m_inRoute->size() > 3)
                 {
                     double dist = Line(longLine.p1, heightIntersectPoint).length();
                     if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist > (1 * deltaTh)) && (sideB > (1 * deltaTh)))
@@ -877,8 +877,9 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                 else
                 {
                     m_inRoute->erase(m_inRoute->begin() + pointNum);
-                }
+                }*/
 
+                m_inRoute->erase(m_inRoute->begin() + pointNum);
                 return Status::ZeroOutsideSharp;
             }
             else
