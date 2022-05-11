@@ -144,7 +144,7 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
             }
         }
 
-        if(outVals.size() > 3)      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh                         
+        if(outVals.size() > 3)      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh
         {
             for(qint32 i = 0; i < outVals.size(); i++)
             {
@@ -492,6 +492,7 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
     double bisAngle = 0;
     bool pointState = false;
     double testLine = 0;
+    Polygon testPolygon = *m_inRoute;
 
     a_side.p1 = pointB;
     c_side.p2 = pointB;
@@ -523,6 +524,47 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
     sideA = a_side.length();
     sideB = b_side.length();
     sideC = c_side.length();
+
+    if(m_inRoute->size() > 3)
+    {
+        testPolygon.erase(testPolygon.begin() + pointNum);
+
+        if(!isRegionContainsPointsReg(testPolygon, pointB))
+        {
+            if((sideA < deltaTh) || (sideC < deltaTh))
+            {
+                m_inRoute->erase(m_inRoute->begin() + pointNum);
+                return Status::ZeroOutsideSharp;
+            }
+        }
+        else
+        {
+            if(sideA < deltaTh)
+            {
+                if(pointNum == (m_inRoute->size() - 1))
+                {
+                    m_inRoute->erase(m_inRoute->begin());
+                }
+                else
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum);
+                }
+                return Status::ZeroOutsideSharp;
+            }
+            else if(sideC < deltaTh)
+            {
+                if(pointNum != 0)
+                {
+                    m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                }
+                else
+                {
+                    m_inRoute->erase(m_inRoute->end() - 1);
+                }
+                return Status::ZeroOutsideSharp;
+            }
+        }
+    }
 
     angleA = ((pow(sideB, 2) + pow(sideC, 2) - pow(sideA, 2))/(2 * sideB * sideC));
 
@@ -812,7 +854,7 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
         }
         else
         {
-            if(angleB < 0.5)
+            if(angleB < 0.7)
             {
                 if(m_inRoute->size() > 3)
                 {
@@ -879,8 +921,14 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                     m_inRoute->erase(m_inRoute->begin() + pointNum);
                 }
 
+                //m_inRoute->erase(m_inRoute->begin() + pointNum);
                 return Status::ZeroOutsideSharp;
             }
+            /*else if(shortLine.length() < deltaTh)
+            {
+                m_inRoute->erase(m_inRoute->begin() + pointNum);
+                return Status::ZeroOutsideSharp;
+            }*/
             else
             {
                 candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
