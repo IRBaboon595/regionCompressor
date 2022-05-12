@@ -1097,6 +1097,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
         if(outVals.size() > 3)
         {
             std::vector<GroupFlight::Line> testLineVect;
+            GroupFlight::Line testLine_1;
             for(qint32 i = 0; i < qint32(outVals.size()); i++)
             {
                 testPoint = outVals.at(i);
@@ -1108,7 +1109,8 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                     tempLen = GroupFlight::lineLength(testLine);
                     if(tempLen < deltaTh * 0.9)
                     {
-                        if(GroupFlight::isIntersects(testLine, GroupFlight::Line(inVals.at(t), inVals.at((t != (testLineVect.size() - 1) ? (t + 1) : 0)))))
+                        testLine_1 = GroupFlight::Line(inVals.at(t), inVals.at((t != (testLineVect.size() - 1) ? (t + 1) : 0)));
+                        if(GroupFlight::isIntersects(testLine, testLine_1))
                         {
                             outVals.erase(outVals.begin() + i);
                             i--;
