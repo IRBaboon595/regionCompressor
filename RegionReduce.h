@@ -11,8 +11,9 @@
 #include <ctime>
 #include <cstring>
 #include <QDebug>
+#include <QPair>
 
-//Test for new pull
+using namespace std;
 
 /*!
  *  \brief Данный файл содержит набор функций дял расчёта.
@@ -302,6 +303,11 @@ inline GroupFlight::Coef calcCoefs(const GroupFlight::Line line)
     return coef;
 }
 
+/*!
+ *  \brief Данная функция собирает вектор линий от точки до линий полигона.
+ *  \param line - линия. Обьект GroupFlight::Line.
+ *  \return Коэффициенты линейного уравнения. Обьект RegionReduce::Coef.
+*/
 inline std::vector<GroupFlight::Line> filterLittleDistances(std::vector<GroupFlight::Point> inPoly, GroupFlight::Point testPoint)
 {
     std::vector<GroupFlight::Line> resultLines;
@@ -443,45 +449,105 @@ inline GroupFlight::Point findIntersectPoint(GroupFlight::Line line1, GroupFligh
  *  \param m_outRoute - вектор точек. Объект std::vector<GroupFlight::Point>.
  *  \return Проверенный вектор точек. Объект std::vector<GroupFlight::Point>.
  */
-inline bool findOutIntercept(std::vector<GroupFlight::Point> *m_outRoute)
+inline void findOutIntercept(std::vector<GroupFlight::Point> *polygon)
 {
-    qint32 num = qint32(m_outRoute->size());
-    GroupFlight::Point point1;
-    GroupFlight::Point point2;
+    using namespace std;
+    using namespace GroupFlight;
+    /*std::vector<GroupFlight::Line> testVector;
+    quint32 firstPointNum = 0;
+    quint32 lastPointNum = 0;
     GroupFlight::Point resultPoint;
     GroupFlight::Line line1;
     GroupFlight::Line line2;
+    GroupFlight::Line testLine;
+    std::map<GroupFlight::Line, quint32> testMap;
+    std::vector<std::pair<GroupFlight::Line, quint32>> testPair;
+    quint32 testCounter = 0;
+    quint32 vectSize = polygon->size();
+    quint32 distance = polygon->size();
+    quint8 boollee = 0;
 
-    for(int i = 0; i < (num - 2); i++)
+    for(quint32 i = 0; i < distance; i++)                           // Выполняется заполнение тест-вектора линиями на базе точек исходного вектора
     {
-        point1 = m_outRoute->at(i);                             // Проверяем пересекаются ли линии n и n + 2
-        line1.p1 = m_outRoute->at(i);
-        line1.p2 = m_outRoute->at(i + 1);
-        line2.p1 = m_outRoute->at(i + 2);
-        if(uint32_t(i + 3) == m_outRoute->size())
+        if(i == (distance - 1))
         {
-            point2 = m_outRoute->at(0);
-            line2.p2 = m_outRoute->at(0);
+            testVector.push_back(GroupFlight::Line(polygon->at(i), polygon->at(0)));
         }
         else
         {
-            point2 = m_outRoute->at(i + 3);
-            line2.p2 = m_outRoute->at(i + 3);
+            testVector.push_back(GroupFlight::Line(polygon->at(i), polygon->at(i + 1)));
         }
 
-        if(GroupFlight::isIntersects(line1, line2))                 // Если обнаружено пересечение...
+        testPair.push_back(std::pair<GroupFlight::Line, quint32>(testVector.at(i), i));
+    }
+
+    while(testVector.size() > 2)                                // Выполняется проверка на пересечение линии n с линиями n + 2 + i (где i - порядковый номер в векторе)
+    {
+        if(testVector.size() == vectSize)
+            distance--;
+        else
+            distance = quint32(testVector.size());
+        for(quint32 i = 2; i < distance; i++)
+        {
+            line1 = testVector.at(0);
+            line2 = testVector.at(i);
+            if(isIntersects(line1, line2))               // Если обнаружено пересечение, то выходной поток сигнализирует ошибку - возвращается False
+            {
+                firstPointNum = testCounter;
+                lastPointNum = testCounter + i;
+                resultPoint = findIntersectPoint(line1, line2);
+                polygon->erase(polygon->begin() + firstPointNum + 1, polygon->begin() + lastPointNum);
+                polygon->emplace(polygon->begin() + lastPointNum, resultPoint);
+
+                testCounter += i;
+                testVector.erase(testVector.begin(), testVector.begin() + i);
+                boollee = 1;
+                break;
+            }
+        }
+        if(boollee == 0)
+        {
+            testVector.erase(testVector.begin());
+            testCounter++;
+        }
+        else
+        {
+            boollee = 0;
+        }
+    }*/
+
+
+    qint32 num = qint32(polygon->size());
+    Point point1;
+    Point point2;
+    Point resultPoint;
+    Line line1;
+    Line line2;
+
+    for(int i = 0; i < (num - 2); i++)
+    {
+        point1 = polygon->at(i);                             // Проверяем пересекаются ли линии n и n + 2
+        line1.p1 = polygon->at(i);
+        line1.p2 = polygon->at(i + 1);
+        line2.p1 = polygon->at(i + 2);
+        if(uint32_t(i + 3) == polygon->size())
+        {
+            point2 = polygon->at(0);
+            line2.p2 = polygon->at(0);
+        }
+        else
+        {
+            point2 = polygon->at(i + 3);
+            line2.p2 = polygon->at(i + 3);
+        }
+
+        if(isIntersects(line1, line2))                 // Если обнаружено пересечение...
         {
             resultPoint = findIntersectPoint(line1, line2);
-            qDebug() << "message 1";
-            m_outRoute->erase(m_outRoute->begin() + i);             // ...удаляем точки формирующие пересекающие кривые...
-            m_outRoute->erase(m_outRoute->begin() + i);
-            m_outRoute->erase(m_outRoute->begin() + i);
-            m_outRoute->erase(m_outRoute->begin() + i);
-            qDebug() << "message 2";
 
-            m_outRoute->emplace(m_outRoute->begin() + i, point2);           // ...добавляем точки без персечения (см. бриф).
-            m_outRoute->emplace(m_outRoute->begin() + i, resultPoint);
-            m_outRoute->emplace(m_outRoute->begin() + i, point1);
+            polygon->emplace(polygon->begin() + i + 1, resultPoint);
+            polygon->erase(polygon->begin() + i + 2);             // ...удаляем точки формирующие пересекающие кривые...
+            polygon->erase(polygon->begin() + i + 2);
             num--;
         }
     }
@@ -992,9 +1058,17 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<GroupFligh
                     {
                         m_inRoute->erase(m_inRoute->begin() + pointNum);
                     }*/
+                    if(sideB >= (1 * deltaTh))
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                    }
+                    else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }
 
-                    m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                    m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+
                     /*if(sideA < sideC)
                     {
                         m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
@@ -1094,79 +1168,128 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
             }
         }
 
-        if(outVals.size() > 3)
+        if(toggleUnit)
         {
-            std::vector<GroupFlight::Line> testLineVect;
-            GroupFlight::Line testLine_1;
-            for(qint32 i = 0; i < qint32(outVals.size()); i++)
+            if(outVals.size() > 3)
             {
-                testPoint = outVals.at(i);
-                testLineVect = filterLittleDistances(inVals, testPoint);
-                double tempLen = 0;
-                for(qint32 t = 0; t < testLineVect.size(); t++)
+                qDebug() << "Evil point succesfully deleted";
+                findOutIntercept(&outVals);
+            }
+
+            if(outVals.size() > 3)
+            {
+                std::vector<GroupFlight::Line> testLineVect;
+                GroupFlight::Line testLine_1;
+                for(qint32 i = 0; i < qint32(outVals.size()); i++)
                 {
-                    testLine = testLineVect.at(t);
-                    tempLen = GroupFlight::lineLength(testLine);
-                    if(tempLen < deltaTh * 0.9)
+                    testPoint = outVals.at(i);
+                    testLineVect = filterLittleDistances(inVals, testPoint);
+                    double tempLen = 0;
+                    for(qint32 t = 0; t < testLineVect.size(); t++)
                     {
-                        testLine_1 = GroupFlight::Line(inVals.at(t), inVals.at((t != (testLineVect.size() - 1) ? (t + 1) : 0)));
-                        if(GroupFlight::isIntersects(testLine, testLine_1))
+                        testLine = testLineVect.at(t);
+                        tempLen = GroupFlight::lineLength(testLine);
+                        if(tempLen < deltaTh * 0.9)
                         {
-                            outVals.erase(outVals.begin() + i);
-                            i--;
-                            break;
+                            testLine_1 = GroupFlight::Line(inVals.at(t), inVals.at((t != (testLineVect.size() - 1) ? (t + 1) : 0)));
+                            if(GroupFlight::isIntersects(testLine, testLine_1))
+                            {
+                                qDebug() << "Nasty point succesfully deleted";
+                                outVals.erase(outVals.begin() + i);
+                                i--;
+                                break;
+                            }
+                            else
+                            {
+                                testLine.p2.x += testLine.p2.x * 0.001;
+                                if(GroupFlight::isIntersects(testLine, testLine_1))
+                                {
+                                    qDebug() << "Nasty point succesfully deleted";
+                                    outVals.erase(outVals.begin() + i);
+                                    i--;
+                                    break;
+                                }
+                                else
+                                {
+                                    testLine.p2.x -= testLine.p2.x * 0.001;
+                                    if(GroupFlight::isIntersects(testLine, testLine_1))
+                                    {
+                                        qDebug() << "Nasty point succesfully deleted";
+                                        outVals.erase(outVals.begin() + i);
+                                        i--;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        testLine.p2.y += testLine.p2.y * 0.001;
+                                        if(GroupFlight::isIntersects(testLine, testLine_1))
+                                        {
+                                            qDebug() << "Nasty point succesfully deleted";
+                                            outVals.erase(outVals.begin() + i);
+                                            i--;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            testLine.p2.y -= testLine.p2.y * 0.001;
+                                            if(GroupFlight::isIntersects(testLine, testLine_1))
+                                            {
+                                                qDebug() << "Nasty point succesfully deleted";
+                                                outVals.erase(outVals.begin() + i);
+                                                i--;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
 
-        /*if(outVals.size() > 3)                                      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh
-        {
-            for(qint32 i = 0; i < qint32(outVals.size()); i++)
+            if(outVals.size() > 3)                                      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh
             {
-                testVals = outVals;
-                testPoint = outVals.at(i);
-                testVals.erase(testVals.begin() + i);
-                if(!(GroupFlight::isRegionContainsPoint(testVals, testPoint)))
+                for(qint32 i = 0; i < qint32(outVals.size()); i++)
                 {
-                    testLine.p1 = outVals.at(i);
-                    if(i == qint32(outVals.size() - 1))
+                    testVals = outVals;
+                    testPoint = outVals.at(i);
+                    testVals.erase(testVals.begin() + i);
+                    if(!(GroupFlight::isRegionContainsPoint(testVals, testPoint)))
                     {
-                        testLine.p2 = outVals.at(0);
-                    }
-                    else
-                    {
-                        testLine.p2 = outVals.at(i + 1);
-                    }
-
-                    if(GroupFlight::lineLength(testLine) <= deltaTh * 0.5)
-                    {
-                        qDebug() << "PointDeleted";
-                        if(i != (outVals.size() - 1))
+                        testLine.p1 = outVals.at(i);
+                        if(i == qint32(outVals.size() - 1))
                         {
-                            outVals.erase(outVals.begin() + i + 1);
+                            testLine.p2 = outVals.at(0);
                         }
                         else
                         {
-                            outVals.erase(outVals.begin());
+                            testLine.p2 = outVals.at(i + 1);
                         }
-                        i--;
+
+                        if(GroupFlight::lineLength(testLine) <= deltaTh * 1)
+                        {
+                            qDebug() << "PointDeleted";
+                            if(i != (outVals.size() - 1))
+                            {
+                                outVals.erase(outVals.begin() + i + 1);
+                            }
+                            else
+                            {
+                                outVals.erase(outVals.begin());
+                            }
+                            i--;
+                        }
                     }
                 }
             }
-        }*/
 
-        /*if(toggleUnit)
-        {
             for(size_t i = 0; i < outVals.size(); i++)      // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
             {
                 if(!(GroupFlight::isRegionContainsPoint(testInVals, outVals.at(i))))
                 {
                     outVals.erase(outVals.begin() + i);
-                    //outVals.clear();
                     i--;
-                    //break;
                 }
             }
 
@@ -1201,7 +1324,7 @@ inline std::vector<GroupFlight::Point> parseRoute(std::vector<GroupFlight::Point
                     }
                 }
             }
-        }*/
+        }
 
         if(!filterVect(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
 
