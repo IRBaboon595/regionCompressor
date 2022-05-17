@@ -48,6 +48,10 @@ namespace GroupFlight
         Line(): Line(0., 0., 0., 0.){}
     };
 
+    constexpr bool operator< (const Line& lhs, const Line& rhs) {
+        return std::tie(lhs.p1.x, lhs.p1.y, lhs.p2.x, lhs.p2.y) < std::tie(rhs.p1.x, rhs.p1.y, rhs.p2.x, rhs.p2.y);
+    }
+
     //! \brief Coef - коэффициенты линии
     struct Coef
     {

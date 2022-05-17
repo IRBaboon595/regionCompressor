@@ -65,14 +65,121 @@ bool util::math::Polygon::isRegular(Polygon poly) const
         {
             if (Line::isIntersects(testVector.at(0), testVector.at(i)))               // Если обнаружено пересечение, то выходной поток сигнализирует ошибку - возвращается False
             {
-                //qDebug() << "Route invalid - set another. Got border intercetion";
-                //m_inRoute->clear();
                 return false;
             }
         }
         testVector.erase(testVector.begin());                   // Если в ходе проверки, не обнаржено пересечений ни с одной другой линией в массиве, то элемент удаляется из контейнера
     }
     return true;
+}
+
+void util::math::Polygon::isLineInsideIntercept(Polygon *polygon) const
+{
+    qint32 num = qint32(polygon->size());
+    Point point1;
+    Point point2;
+    Point resultPoint;
+    Line line1;
+    Line line2;
+
+    for(int i = 0; i < (num - 2); i++)
+    {
+        point1 = polygon->at(i);                             // Проверяем пересекаются ли линии n и n + 2
+        line1.p1 = polygon->at(i);
+        line1.p2 = polygon->at(i + 1);
+        line2.p1 = polygon->at(i + 2);
+        if(uint32_t(i + 3) == polygon->size())
+        {
+            point2 = polygon->at(0);
+            line2.p2 = polygon->at(0);
+        }
+        else
+        {
+            point2 = polygon->at(i + 3);
+            line2.p2 = polygon->at(i + 3);
+        }
+
+        if(line1.isIntersects(line2))                 // Если обнаружено пересечение...
+        {
+            if(getIntersectPoint(line1, line2, &resultPoint))
+            {
+                polygon->emplace(polygon->begin() + i + 1, resultPoint);
+                polygon->erase(polygon->begin() + i + 2);             // ...удаляем точки формирующие пересекающие кривые...
+                polygon->erase(polygon->begin() + i + 2);
+                num--;
+            }
+        }
+    }
+}
+
+bool util::math::Polygon::getIntersectPoint(Line line1, Line line2, Point *point) const
+{
+   LineEquation coef_1;
+   LineEquation coef_2;
+   Point interceptPoint;
+
+   if(((line1.p1.x - line1.p2.x) != 0) && ((line1.p1.y - line1.p2.y) != 0))
+   {
+       coef_1 = line1.equation();
+
+       if(((line2.p1.x - line2.p2.x) != 0) && ((line2.p1.y - line2.p2.y) != 0))
+       {
+           coef_2 = line2.equation();
+
+           interceptPoint.x = ((coef_2.b - coef_1.b) / (coef_1.k - coef_2.k));
+           interceptPoint.y = coef_2.k * interceptPoint.x + coef_2.b;
+       }
+       else if((line2.p1.x - line2.p2.x) == 0)
+       {
+           interceptPoint.x = line2.p1.x;
+           interceptPoint.y = coef_1.k * interceptPoint.x + coef_1.b;
+       }
+       else if((line2.p1.y - line2.p2.y) == 0)
+       {
+           interceptPoint.y = line2.p1.y;
+           interceptPoint.x = (interceptPoint.y - coef_1.b) / coef_1.k;
+       }
+   }
+   else if((line1.p1.x - line1.p2.x) == 0)
+   {
+       if(((line2.p1.x - line2.p2.x) != 0) && ((line2.p1.y - line2.p2.y) != 0))
+       {
+           coef_2 = line2.equation();
+
+           interceptPoint.x = line1.p1.x;
+           interceptPoint.y = coef_2.k * interceptPoint.x + coef_2.b;
+       }
+       else if((line2.p1.x - line2.p2.x) == 0)
+       {
+           return false;
+       }
+       else if((line2.p1.y - line2.p2.y) == 0)
+       {
+           interceptPoint.x = line1.p1.x;
+           interceptPoint.y = line2.p1.y;
+       }
+   }
+   else if((line1.p1.y - line1.p2.y) == 0)
+   {
+       if(((line2.p1.x - line2.p2.x) != 0) && ((line2.p1.y - line2.p2.y) != 0))
+       {
+           coef_2 = line2.equation();
+
+           interceptPoint.y = line1.p1.y;
+           interceptPoint.x = (interceptPoint.y - coef_2.b) / coef_2.k;
+       }
+       else if((line2.p1.x - line2.p2.x) == 0)
+       {
+           interceptPoint.x = line2.p1.x;
+           interceptPoint.y = line1.p1.y;
+       }
+       else if((line2.p1.y - line2.p2.y) == 0)
+       {
+           return false;
+       }
+   }
+
+   return true;
 }
 
 bool util::math::Polygon::isContains(const Point &point) const
@@ -103,6 +210,160 @@ bool util::math::Polygon::isIntersectRegion(const Line &line) const
         if (line.isIntersects(Line(at(i-1), at(i)))) return true;
     }
     return false;
+}
+
+std::vector<Line> util::math::Polygon::getNormalDistances(Polygon inPoly, Point testPoint) const
+{
+    std::vector<Line> resultLines;
+    Point intersectPoint;
+    LineEquation inLineCoef;
+    LineEquation orthLineCoef;
+    Line testLine;
+
+    for(qint32 i = 0; i < inPoly.size(); i++)
+    {
+        if(i != (inPoly.size() - 1))
+        {
+            testLine = Line(inPoly.at(i), inPoly.at(i + 1));
+        }
+        else
+        {
+            testLine = Line(inPoly.at(i), inPoly.at(0));
+        }
+
+        if(((testLine.p1.x - testLine.p2.x) != 0) && ((testLine.p1.y - testLine.p2.y) != 0))
+        {
+            inLineCoef = testLine.equation();
+
+            orthLineCoef.k = -1 / inLineCoef.k;
+            orthLineCoef.b = testPoint.y - testPoint.x * orthLineCoef.k;
+
+            intersectPoint.x = (orthLineCoef.b - inLineCoef.b) / (inLineCoef.k - orthLineCoef.k);
+            intersectPoint.y = orthLineCoef.k * intersectPoint.x + orthLineCoef.b;
+        }
+        else if((testLine.p1.x - testLine.p2.x) == 0)
+        {
+            intersectPoint.x = testLine.p2.x;
+            intersectPoint.y = testPoint.y;
+        }
+        else if((testLine.p1.y - testLine.p2.y) == 0)
+        {
+            intersectPoint.y = testLine.p2.y;
+            intersectPoint.x = testPoint.x;
+        }
+        resultLines.push_back((Line(testPoint, intersectPoint)));
+    }
+
+    return resultLines;
+}
+
+void util::math::Polygon::filterNormalDistances(Polygon inPolygon, Polygon *outPolygon, double deltaTh) const
+{
+    std::vector<Line> testLine_1Vect;
+    Polygon testPoly;
+    Line testLine_1;
+    Line testLine_2;
+    Point testPoint;
+    for(qint32 i = 0; i < qint32(outPolygon->size()); i++)
+    {
+        testPoint = outPolygon->at(i);
+        testLine_1Vect = getNormalDistances(inPolygon, testPoint);
+        double tempLen = 0;
+        for(qint32 t = 0; t < testLine_1Vect.size(); t++)
+        {
+            testLine_1 = testLine_1Vect.at(t);
+            tempLen = testLine_1.length();
+            if(tempLen < deltaTh * 0.9)
+            {
+                testLine_2 = Line(inPolygon.at(t), inPolygon.at((t != (testLine_1Vect.size() - 1) ? (t + 1) : 0)));
+                if(testLine_1.isIntersects(testLine_2))
+                {
+                    outPolygon->erase(outPolygon->begin() + i);
+                    i--;
+                    break;
+                }
+                else
+                {
+                    testLine_1.p2.x += testLine_1.p2.x * 0.001;
+                    if(testLine_1.isIntersects(testLine_2))
+                    {
+                        outPolygon->erase(outPolygon->begin() + i);
+                        i--;
+                        break;
+                    }
+                    else
+                    {
+                        testLine_1.p2.x -= testLine_1.p2.x * 0.001;
+                        if(testLine_1.isIntersects(testLine_2))
+                        {
+                            outPolygon->erase(outPolygon->begin() + i);
+                            i--;
+                            break;
+                        }
+                        else
+                        {
+                            testLine_1.p2.y += testLine_1.p2.y * 0.001;
+                            if(testLine_1.isIntersects(testLine_2))
+                            {
+                                outPolygon->erase(outPolygon->begin() + i);
+                                i--;
+                                break;
+                            }
+                            else
+                            {
+                                testLine_1.p2.y -= testLine_1.p2.y * 0.001;
+                                if(testLine_1.isIntersects(testLine_2))
+                                {
+                                    outPolygon->erase(outPolygon->begin() + i);
+                                    i--;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void util::math::Polygon::filterLittlePolyLines(Polygon *outPolygon, double deltaTh) const
+{
+    Polygon testVals;
+    Point testPoint;
+    Line testLine;
+
+    for(qint32 i = 0; i < qint32(outPolygon->size()); i++)
+    {
+        testVals = *outPolygon;
+        testPoint = outPolygon->at(i);
+        testVals.erase(testVals.begin() + i);
+        if(!(testVals.isContains(testPoint)))
+        {
+            testLine.p1 = outPolygon->at(i);
+            if(i == qint32(outPolygon->size() - 1))
+            {
+                testLine.p2 = outPolygon->at(0);
+            }
+            else
+            {
+                testLine.p2 = outPolygon->at(i + 1);
+            }
+
+            if(testLine.length() <= deltaTh * 0.5)
+            {
+                if(i != (outPolygon->size() - 1))
+                {
+                    outPolygon->erase(outPolygon->begin() + i + 1);
+                }
+                else
+                {
+                    outPolygon->erase(outPolygon->begin());
+                }
+                i--;
+            }
+        }
+    }
 }
 
 /*!
@@ -144,44 +405,23 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
             }
         }
 
-        if(outVals.size() > 3)      // Удаляем отрезки полигона, длина которых меньше либо равна deltaTh
+        if(outVals.size() > 3)
         {
-            for(qint32 i = 0; i < outVals.size(); i++)
-            {
-                testVals = outVals;
-                testPoint = outVals.at(i);
-                testVals.erase(testVals.begin() + i);
-                if(!(testVals.isContains(testPoint)))
-                {
-                    testLine.p1 = outVals.at(i);
-                    if(i == outVals.size() - 1)
-                    {
-                        testLine.p2 = outVals.at(0);
-                    }
-                    else
-                    {
-                        testLine.p2 = outVals.at(i + 1);
-                    }
+            isLineInsideIntercept(&outVals);                            // Данная функция ищете пересечения линий в полигоне "через одну"
+            filterNormalDistances(inVals, &outVals, deltaTh);           // Данная функция проверяет не расположены ли какие-либо точки внутреннего полигона близко к сторонам внешнего полигона
+            filterLittlePolyLines(&outVals, deltaTh);                   // Данная функция проверяет нет ли во внутреннем полигоне особо малых отрезков
+        }
 
-                    if(testLine.length() <= deltaTh)
-                    {
-                        outVals.erase(outVals.begin() + i);
-                        i--;
-                    }
-                }
+        for(size_t i = 0; i < outVals.size(); i++)      // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
+        {
+            if(!(testInVals.isContains(outVals.at(i))))
+            {
+                outVals.erase(outVals.begin() + i);
+                i--;
             }
         }
 
-        for(qint32 i = 0; i < outVals.size(); i++)  // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
-        {
-            if(!(testInVals.isContains(outVals.at(i))))    
-            {
-                    outVals.erase(outVals.begin() + i);                    
-                    i--;                     
-            }
-        }
-
-        for(size_t i = 0; i < outVals.size(); i++)
+        for(size_t i = 0; i < outVals.size(); i++)      // Проверяем не пересекаются ли линии внутреннего и внешнего полигонов
         {
             testLine_1.p1 = outVals.at(i);
             if(i == outVals.size() - 1)
@@ -211,9 +451,10 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
                     break;
                 }
             }
-        }     
+        }
 
-        if(!isRegular(outVals))  outVals.clear();
+        if(!isRegular(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
+
     }
     else
     {
@@ -744,6 +985,45 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
             {
                 nextLine.p1 = pointA;
 
+                longLine = a_side;
+                shortLine = c_side;
+            }
+            else
+            {
+                nextLine.p1 = pointC;
+
+                longLine = c_side;
+                shortLine = a_side;
+            }
+
+            if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
+            {
+                longLineCoef = longLine.equation();
+
+                nextLineCoef.k = -1 / longLineCoef.k;
+                nextLineCoef.b = nextLine.p1.y - nextLine.p1.x * nextLineCoef.k;
+
+                heightIntersectPoint.x = (nextLineCoef.b - longLineCoef.b) / (longLineCoef.k - nextLineCoef.k);
+                heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
+            }
+            else if((longLine.p1.x - longLine.p2.x) == 0)
+            {
+                heightIntersectPoint.x = longLine.p2.x;
+                heightIntersectPoint.y = nextLine.p1.y;
+            }
+            else if((longLine.p1.y - longLine.p2.y) == 0)
+            {
+                heightIntersectPoint.y = longLine.p2.y;
+                heightIntersectPoint.x = nextLine.p1.x;
+            }
+        }
+
+        /*if(m_inRoute->size() > 3)
+        {
+            if(sideA > sideC)
+            {
+                nextLine.p1 = pointA;
+
                 if((pointNum - 2) >= 0)
                 {
                     nextLine.p2 = m_inRoute->at(pointNum - 2);
@@ -829,7 +1109,7 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                     heightIntersectPoint.x = longLine.p1.x;
                 }
             }
-        }
+        }*/
 
         if(triangleHeight > (2 * deltaTh))
         {
@@ -854,18 +1134,20 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
         }
         else
         {
-            if(angleB < 0.7)
+            if(angleB < 1.04)
             {
                 if(m_inRoute->size() > 3)
                 {
-                    double dist = Line(longLine.p1, heightIntersectPoint).length();
-                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist > (1 * deltaTh)) && (sideB > (1 * deltaTh)))
+                    /*double dist = GroupFlight::lineLength(GroupFlight::Line(longLine.p1, heightIntersectPoint));
+                    //dist = deltaTh;
+                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist >= (1 * deltaTh)) && (sideB >= (1 * deltaTh)))
+                    //if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (sideB >= (2 * deltaTh)))
                     {
                         if(sideA < sideC)
                         {
                             m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
                             m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                            if(pointNum == (m_inRoute->size() - 1))
+                            if(pointNum == qint32(m_inRoute->size() - 1))
                             {
                                 m_inRoute->erase(m_inRoute->begin());
                             }
@@ -888,6 +1170,8 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                             }
                         }
                     }
+                    //else if((dist < (2 * deltaTh)) || (sideB < (1.412 * deltaTh)))
+                    //else if((sideB < (1 * deltaTh)))
                     else
                     {
                         m_inRoute->erase(m_inRoute->begin() + pointNum);
@@ -913,15 +1197,54 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                                 m_inRoute->erase(m_inRoute->begin() + pointNum);
                             }
                         }
-
                     }
+                    /*else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }*/
+                    if(sideB >= (1 * deltaTh))
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                    }
+                    else
+                    {
+                        m_inRoute->erase(m_inRoute->begin() + pointNum);
+                    }
+
+
+                    /*if(sideA < sideC)
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(pointNum == qint32(m_inRoute->size() - 1))
+                        {
+                            m_inRoute->erase(m_inRoute->begin());
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        }
+                    }
+                    else
+                    {
+                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(pointNum != 0)
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->end() - 1);
+                        }
+                    }*/
                 }
                 else
                 {
                     m_inRoute->erase(m_inRoute->begin() + pointNum);
                 }
 
-                //m_inRoute->erase(m_inRoute->begin() + pointNum);
                 return Status::ZeroOutsideSharp;
             }
             /*else if(shortLine.length() < deltaTh)

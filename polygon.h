@@ -30,8 +30,13 @@ namespace util
             Rect boundingRect() const;
 
             bool isRegular(Polygon poly) const;
+            void isLineInsideIntercept(Polygon *polygon) const;
             bool isContains(const Point &point) const;
             bool isIntersectRegion(const Line &line) const;
+            bool getIntersectPoint(Line line1, Line line2, Point *point = 0) const;
+            std::vector<Line> getNormalDistances(Polygon inPoly, Point testPoint) const;
+            void filterNormalDistances(Polygon inPolygon, Polygon *outPolygon, double deltaTh) const;
+            void filterLittlePolyLines(Polygon *outPolygon, double deltaTh) const;
 
             Polygon adjusted(double deltaTh) const;
 
