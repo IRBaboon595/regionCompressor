@@ -12,6 +12,9 @@
 #include <cstring>
 #include <QDebug>
 
+using namespace std;
+using namespace GroupFlight;
+
 enum class TriangleParams{
     SideA = 0,
     SideB,
@@ -20,8 +23,6 @@ enum class TriangleParams{
     AngleB,
     AngleC
 };
-
-using namespace std;
 
 class compressor
 {
@@ -57,7 +58,7 @@ public:
     bool filterInVect();
 
     GroupFlight::Point findIntersectPoint(GroupFlight::Line line1, GroupFlight::Line line2);
-    GroupFlight::Coef calcCoefs(GroupFlight::Line line);
+    LineEquation calcCoefs(GroupFlight::Line line);
     void findOutIntercept();
 
     void clearAll();

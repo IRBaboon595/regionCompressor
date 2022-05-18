@@ -79,8 +79,8 @@ void mainwindow::paintEvent(QPaintEvent *)
     pointPen.setCapStyle(Qt::RoundCap);
 
     painter.setPen(pointPen);
-    //for (GroupFlight::Point &tempPoint : m_inRoute) {
-    for (util::math::Point &tempPoint : inPoly) {
+    for (GroupFlight::Point &tempPoint : m_inRoute) {
+    //for (util::math::Point &tempPoint : inPoly) {
         polyF << QPointF(tempPoint.x, tempPoint.y);
         painter.drawPoint(QPointF(tempPoint.x, tempPoint.y));
     }
@@ -91,8 +91,8 @@ void mainwindow::paintEvent(QPaintEvent *)
 
     pointPen.setColor(Qt::green);
     painter.setPen(pointPen);
-    //for (GroupFlight::Point &tempPoint1 : m_outRoute) {
-    for (util::math::Point &tempPoint1 : outPoly) {
+    for (GroupFlight::Point &tempPoint1 : m_outRoute) {
+    //for (util::math::Point &tempPoint1 : outPoly) {
         polyFComp << QPointF(tempPoint1.x, tempPoint1.y);
         painter.drawPoint(QPointF(tempPoint1.x, tempPoint1.y));
     }
@@ -102,8 +102,8 @@ void mainwindow::paintEvent(QPaintEvent *)
 
     pointPen.setColor(Qt::red);
     painter.setPen(pointPen);
-    //for (GroupFlight::Point &tempPoint1 : m_testRoute) {
-    for (util::math::Point &tempPoint1 : outPoly) {
+    for (GroupFlight::Point &tempPoint1 : m_testRoute) {
+    //for (util::math::Point &tempPoint1 : outPoly) {
         polyFCompTests << QPointF(tempPoint1.x, tempPoint1.y);
         painter.drawPoint(QPointF(tempPoint1.x, tempPoint1.y));
     }
@@ -116,23 +116,24 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
 {
     if(event->buttons() == Qt::RightButton)
     {
-        /*this->tempPoint.x = event->pos().x();
+        this->tempPoint.x = event->pos().x();
         this->tempPoint.y = event->pos().y();
         c->addValue(tempPoint);
         m_inRoute.push_back(tempPoint);
-        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal, &m_testRoute);*/
+        m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal, &m_testRoute);
 
-        this->tempTestPoint.x = event->pos().x();
+        /*this->tempTestPoint.x = event->pos().x();
         this->tempTestPoint.y = event->pos().y();
         inPoly.push_back(tempTestPoint);
-        outPoly = inPoly.adjusted(m_deltaTh);
+        outPoly = inPoly.adjusted(m_deltaTh);*/
+
         update();
     }
     else if(event->buttons() == Qt::LeftButton)
     {
         QPoint clickPoint = event->pos();
 
-        /*GroupFlight::Line distLine;
+        GroupFlight::Line distLine;
         distLine.p1 = GroupFlight::Point(clickPoint.x(), clickPoint.y());
 
         for(uint i = 0; i < m_inRoute.size(); i++)
@@ -143,9 +144,9 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
                 curPointIndex = i;
                 qDebug() << curPointIndex;
             }
-        }*/
+        }
 
-        util::math::Line distLine;
+        /*util::math::Line distLine;
         distLine.p1 = util::math::Point(clickPoint.x(), clickPoint.y());
 
         for(uint i = 0; i < inPoly.size(); i++)
@@ -156,13 +157,13 @@ void mainwindow::mousePressEvent(QMouseEvent *event)
                 curPointIndex = i;
                 qDebug() << curPointIndex;
             }
-        }
+        }*/
     }
 }
 
 void mainwindow::mouseMoveEvent(QMouseEvent *event)
 {
-    /*if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
+    if((m_inRoute.size() >= 3) && (curPointIndex != BigNum))
     {
         QPoint clickPoint = event->pos();
         m_inRoute.erase(m_inRoute.begin() + curPointIndex);
@@ -171,9 +172,8 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
 
         m_outRoute = RegionReduce::parseRoute(m_inRoute, m_deltaTh, toggleVal, &m_testRoute);
     }
-    update();*/
 
-    if((inPoly.size() >= 3) && (curPointIndex != BigNum))
+    /*if((inPoly.size() >= 3) && (curPointIndex != BigNum))
     {
         QPoint clickPoint = event->pos();
         inPoly.erase(inPoly.begin() + curPointIndex);
@@ -181,7 +181,8 @@ void mainwindow::mouseMoveEvent(QMouseEvent *event)
                        util::math::Point(clickPoint.x(), clickPoint.y()));
 
         outPoly = inPoly.adjusted(m_deltaTh);
-    }
+    }*/
+
     update();
 }
 

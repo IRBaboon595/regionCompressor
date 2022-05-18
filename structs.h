@@ -52,14 +52,14 @@ namespace GroupFlight
         return std::tie(lhs.p1.x, lhs.p1.y, lhs.p2.x, lhs.p2.y) < std::tie(rhs.p1.x, rhs.p1.y, rhs.p2.x, rhs.p2.y);
     }
 
-    //! \brief Coef - коэффициенты линии
-    struct Coef
+    //! \brief LineEquation - коэффициенты линии
+    struct LineEquation
     {
         double k, b;
 
-        Coef(double _k, double _b): k(_k), b(_b){}
-        Coef(Coef const &c): k(c.k), b(c.b){}
-        Coef(): k(0.), b(0.){}
+        LineEquation(double _k, double _b): k(_k), b(_b){}
+        LineEquation(LineEquation const &c): k(c.k), b(c.b){}
+        LineEquation(): k(0.), b(0.){}
     };
 
     //! \brief Rect - прямоугольник

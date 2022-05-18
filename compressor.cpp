@@ -276,10 +276,10 @@ void compressor::parseAngle(int pointNum)
             GroupFlight::Point pointInter_1;
             GroupFlight::Point pointInter_2;
             GroupFlight::Point pointInter_3;
-            GroupFlight::Coef testCoef_1;
-            GroupFlight::Coef testCoef_2;
-            GroupFlight::Coef testCoef_3;
-            GroupFlight::Coef orthCoef;
+            LineEquation testCoef_1;
+            LineEquation testCoef_2;
+            LineEquation testCoef_3;
+            LineEquation orthCoef;
             GroupFlight::Line testLine_1;
             GroupFlight::Line testLine_2;
             GroupFlight::Line testLine_3;
@@ -503,8 +503,8 @@ void compressor::getRouteFromFile()
 
 GroupFlight::Point compressor::findIntersectPoint(GroupFlight::Line line1, GroupFlight::Line line2)
 {
-    GroupFlight::Coef coef_1(calcCoefs(line1).k, calcCoefs(line1).b);
-    GroupFlight::Coef coef_2(calcCoefs(line2).k, calcCoefs(line2).b);
+    LineEquation coef_1(calcCoefs(line1).k, calcCoefs(line1).b);
+    LineEquation coef_2(calcCoefs(line2).k, calcCoefs(line2).b);
     GroupFlight::Point interceptPoint;
 
     interceptPoint.x = ((coef_2.b - coef_1.b) / (coef_1.k - coef_2.k));
@@ -513,9 +513,9 @@ GroupFlight::Point compressor::findIntersectPoint(GroupFlight::Line line1, Group
     return interceptPoint;
 }
 
-GroupFlight::Coef compressor::calcCoefs(GroupFlight::Line line)
+LineEquation compressor::calcCoefs(GroupFlight::Line line)
 {
-    GroupFlight::Coef coef;
+    LineEquation coef;
 
     coef.k = ((line.p2.y - line.p1.y) / (line.p2.x - line.p1.x));
     coef.b = line.p2.y - coef.k * line.p2.x;
