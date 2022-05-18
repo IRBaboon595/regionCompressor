@@ -916,8 +916,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
 
     angleC = kPi - angleB - angleA;                   // Расчёт параметров треугольника закончен
 
-    bisLen = deltaTh / (cos(kHalfPi - kHalf * angleB));       // Длина биссектрисы
-    testLine = 0.1 * deltaTh;   // Длина тест-линии для определения типа угла внутренний/внешний
+    bisLen = (deltaTh) / (cos(kHalfPi - kHalf * angleB));       // Длина биссектрисы
+    testLine = 0.1 * (deltaTh);   // Длина тест-линии для определения типа угла внутренний/внешний
 
     bisAngle = calcAngle(pointA, pointB, pointC);   // Угол биссектрисы относительно оси Х
 
@@ -935,8 +935,12 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
     testRoute.erase(testRoute.begin() + pointNum);
     bool pointBState = isRegionContainsPoint(testRoute, pointB);
 
+    pointBState = deltaTh >= 0 ? pointBState : !pointBState;
+    if(deltaTh < 0) bisAngle += kPi;
+
     if(pointBState)
-    {
+    {        
+        //pointState = deltaTh >= 0 ? pointState : !pointState;
         if(angleB < 0.5)
         {
             if(pointNum == 0)
@@ -1055,6 +1059,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
         Line shortLine;
         Line nextLine;
         LineEquation nextLineCoef;
+        if(deltaTh < 0) bisAngle += kPi;
+        //pointState = deltaTh >= 0 ? pointState : !pointState;
 
         if(m_inRoute->size() > 3)
         {
@@ -1095,99 +1101,6 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             }
         }
 
-        /*if(m_inRoute->size() > 3)
-        {
-            if(sideA > sideC)
-            {
-                nextLine.p1 = pointA;
-
-                if((pointNum - 2) >= 0)
-                {
-                    nextLine.p2 = m_inRoute->at(pointNum - 2);
-                }
-                else
-                {
-                    nextLine.p2 = m_inRoute->at(m_inRoute->size() - abs(pointNum - 2));
-                }
-
-                longLine = a_side;
-                shortLine = c_side;
-            }
-            else
-            {
-                nextLine.p1 = pointC;
-
-                if((pointNum + 2) < qint32(m_inRoute->size()))
-                {
-                    nextLine.p2 = m_inRoute->at(pointNum + 2);
-                }
-                else if((pointNum + 2) == qint32(m_inRoute->size()))
-                {
-                    nextLine.p2 = m_inRoute->at(0);
-                }
-                else if((pointNum + 2) == qint32(m_inRoute->size() + 1))
-                {
-                    nextLine.p2 = m_inRoute->at(1);
-                }
-
-                longLine = c_side;
-                shortLine = a_side;
-            }
-
-            if(((nextLine.p1.x - nextLine.p2.x) != 0) && ((nextLine.p1.y - nextLine.p2.y) != 0))
-            {
-                nextLineCoef = calcCoefs(nextLine);
-
-                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
-                {
-                    longLineCoef = calcCoefs(longLine);
-
-                    heightIntersectPoint.x = (nextLineCoef.b - longLineCoef.b) / (longLineCoef.k - nextLineCoef.k);
-                    heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
-                }
-                else if((longLine.p1.x - longLine.p2.x) == 0)
-                {
-                    heightIntersectPoint.x = longLine.p1.x;
-                    heightIntersectPoint.y = nextLineCoef.k * heightIntersectPoint.x + nextLineCoef.b;
-                }
-                else if((longLine.p1.y - longLine.p2.y) == 0)
-                {
-                    heightIntersectPoint.y = longLine.p1.y;
-                    heightIntersectPoint.x = (heightIntersectPoint.y - nextLineCoef.b) / nextLineCoef.k;
-                }
-            }
-            else if((nextLine.p1.x - nextLine.p2.x) == 0)
-            {
-                heightIntersectPoint.x = nextLine.p2.x;
-
-                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
-                {
-                    longLineCoef = calcCoefs(longLine);
-
-                    heightIntersectPoint.y = longLineCoef.k * heightIntersectPoint.x + longLineCoef.b;
-                }
-                else if((longLine.p1.y - longLine.p2.y) == 0)
-                {
-                    heightIntersectPoint.y = longLine.p1.y;
-                }
-            }
-            else if((nextLine.p1.y - nextLine.p2.y) == 0)
-            {
-                heightIntersectPoint.y = nextLine.p2.y;
-
-                if(((longLine.p1.x - longLine.p2.x) != 0) && ((longLine.p1.y - longLine.p2.y) != 0))
-                {
-                    longLineCoef = calcCoefs(longLine);
-
-                    heightIntersectPoint.x = (heightIntersectPoint.y - longLineCoef.b) / longLineCoef.k;
-                }
-                else if((longLine.p1.x - longLine.p2.x) == 0)
-                {
-                    heightIntersectPoint.x = longLine.p1.x;
-                }
-            }
-        }*/
-
         if(triangleHeight > (2 * deltaTh))
         {
             candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
@@ -1215,70 +1128,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             {
                 if(m_inRoute->size() > 3)
                 {
-                    /*double dist = lineLength(Line(longLine.p1, heightIntersectPoint));
-                    //dist = deltaTh;
-                    if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (dist >= (1 * deltaTh)) && (sideB >= (1 * deltaTh)))
-                    //if((isRegionContainsPointsReg(pointA, pointB, pointC, heightIntersectPoint)) && (sideB >= (2 * deltaTh)))
-                    {
-                        if(sideA < sideC)
-                        {
-                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                            if(pointNum == qint32(m_inRoute->size() - 1))
-                            {
-                                m_inRoute->erase(m_inRoute->begin());
-                            }
-                            else
-                            {
-                                m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                            }
-                        }
-                        else
-                        {
-                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                            if(pointNum != 0)
-                            {
-                                m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
-                            }
-                            else
-                            {
-                                m_inRoute->erase(m_inRoute->end() - 1);
-                            }
-                        }
-                    }
-                    //else if((dist < (2 * deltaTh)) || (sideB < (1.412 * deltaTh)))
-                    //else if((sideB < (1 * deltaTh)))
-                    else
-                    {
-                        m_inRoute->erase(m_inRoute->begin() + pointNum);
-                        if(sideA > sideC)
-                        {
-                            if(pointNum == 0)
-                            {
-                                m_inRoute->erase(m_inRoute->end() - 1);
-                            }
-                            else
-                            {
-                                m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
-                            }
-                        }
-                        else
-                        {
-                            if(pointNum == m_inRoute->size())
-                            {
-                                m_inRoute->erase(m_inRoute->begin());
-                            }
-                            else
-                            {
-                                m_inRoute->erase(m_inRoute->begin() + pointNum);
-                            }
-                        }
-                    }
-                    /*else
-                    {
-                        m_inRoute->erase(m_inRoute->begin() + pointNum);
-                    }*/
+
                     if(sideB >= (1 * deltaTh))
                     {
                         m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
@@ -1288,34 +1138,6 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
                     {
                         m_inRoute->erase(m_inRoute->begin() + pointNum);
                     }
-
-
-                    /*if(sideA < sideC)
-                    {
-                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                        if(pointNum == qint32(m_inRoute->size() - 1))
-                        {
-                            m_inRoute->erase(m_inRoute->begin());
-                        }
-                        else
-                        {
-                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                        }
-                    }
-                    else
-                    {
-                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
-                        if(pointNum != 0)
-                        {
-                            m_inRoute->erase(m_inRoute->begin() + pointNum - 1);
-                        }
-                        else
-                        {
-                            m_inRoute->erase(m_inRoute->end() - 1);
-                        }
-                    }*/
                 }
                 else
                 {
@@ -1326,6 +1148,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             }
             else
             {
+
+
                 candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
                 candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
 
