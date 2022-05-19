@@ -916,8 +916,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
 
     angleC = kPi - angleB - angleA;                   // Расчёт параметров треугольника закончен
 
-    bisLen = (deltaTh) / (cos(kHalfPi - kHalf * angleB));       // Длина биссектрисы
-    testLine = 0.1 * (deltaTh);   // Длина тест-линии для определения типа угла внутренний/внешний
+    bisLen = abs(deltaTh) / (cos(kHalfPi - kHalf * angleB));       // Длина биссектрисы
+    testLine = 0.1 * abs(deltaTh);   // Длина тест-линии для определения типа угла внутренний/внешний
 
     bisAngle = calcAngle(pointA, pointB, pointC);   // Угол биссектрисы относительно оси Х
 
@@ -936,17 +936,26 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
     bool pointBState = isRegionContainsPoint(testRoute, pointB);
 
     pointBState = deltaTh >= 0 ? pointBState : !pointBState;
-    if(deltaTh < 0) bisAngle += kPi;
+    //if(deltaTh < 0) bisAngle += kPi;
 
     if(pointBState)
     {        
         //pointState = deltaTh >= 0 ? pointState : !pointState;
+        candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
+        candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+
+        candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
+        candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
+
         if(angleB < 0.5)
         {
             if(pointNum == 0)
             {
                 return Status::ZeroInsideSharp;
             }
+
+            if(deltaTh < 0) bisAngle += kPi;
+
             Point pointInter_1;
             Point pointInter_2;
             Point pointInter_3;
@@ -957,8 +966,8 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             Line testLine_1;
             Line testLine_2;
             Line testLine_3;
-            candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
+            //candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
+            //candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
 
             pointInter_1.x = deltaTh * cos(bisAngle - kPi) + pointB.x;
             pointInter_1.y = deltaTh * sin(bisAngle - kPi) + pointB.y;
@@ -967,6 +976,7 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             testLine_1.p2 = pointInter_1;
 
             testLine_2.p1 = m_outRoute->back();
+
             testLine_2.p2 = candidante_2;
 
             if(((testLine_1.p1.x - testLine_1.p2.x) != 0) && ((testLine_1.p1.y - testLine_1.p2.y) != 0))
@@ -1028,13 +1038,12 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
         }
         else
         {
-            candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
-            candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+            pointBState = isRegionContainsPoint(*m_inRoute, candidante_1);
 
-            candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
+            pointBState = deltaTh >= 0 ? pointBState : !pointBState;
+            pointState = deltaTh >= 0 ? pointState : !pointState;
 
-            if((isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
+            if(pointBState && pointState)
             {
                 resultPoint.x = candidante_1.x;
                 resultPoint.y = candidante_1.y;
@@ -1059,8 +1068,14 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
         Line shortLine;
         Line nextLine;
         LineEquation nextLineCoef;
+
         if(deltaTh < 0) bisAngle += kPi;
-        //pointState = deltaTh >= 0 ? pointState : !pointState;
+
+        candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
+        candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+
+        candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
+        candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
 
         if(m_inRoute->size() > 3)
         {
@@ -1101,13 +1116,12 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             }
         }
 
-        if(triangleHeight > (2 * deltaTh))
+        if(triangleHeight > (2 * abs(deltaTh)))
         {
-            candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
-            candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+            /*pointBState = isRegionContainsPoint(*m_inRoute, candidante_1);
 
-            candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
+            pointBState = deltaTh >= 0 ? pointBState : !pointBState;
+            pointState = deltaTh >= 0 ? pointState : !pointState;*/
 
             if((isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
             {
@@ -1128,11 +1142,17 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             {
                 if(m_inRoute->size() > 3)
                 {
-
-                    if(sideB >= (1 * deltaTh))
+                    if(deltaTh >= 0)
                     {
-                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(sideB >= (1 * deltaTh))
+                        {
+                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum);
+                        }
                     }
                     else
                     {
@@ -1148,13 +1168,13 @@ inline Status parseAngle(qint32 pointNum, double deltaTh, std::vector<Point> *m_
             }
             else
             {
-
+                /*if(deltaTh < 0) bisAngle += kPi;
 
                 candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
                 candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
 
                 candidante_2.x = bisLen * cos(bisAngle - kPi) + pointB.x;
-                candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;
+                candidante_2.y = bisLen * sin(bisAngle - kPi) + pointB.y;*/
 
                 if((isRegionContainsPoint(*m_inRoute, candidante_1)) && (pointState))
                 {
@@ -1227,7 +1247,7 @@ inline std::vector<Point> parseRoute(std::vector<Point> inVals, double deltaTh, 
             }
         }
 
-        if(toggleUnit)
+        if(toggleUnit && (deltaTh >= 0))
         {
             if(outVals.size() > 3)
             {                

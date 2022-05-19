@@ -426,56 +426,58 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
             }
         }
 
-        if(outVals.size() > 3)
+        if(deltaTh >= 0)
         {
-            filterLittlePolyLines(&outVals, deltaTh);                   // Данная функция проверяет нет ли во внутреннем полигоне особо малых отрезков
-            isLineInsideIntercept(&outVals);                            // Данная функция ищете пересечения линий в полигоне "через одну"
-            filterNormalDistances(inVals, &outVals, deltaTh);           // Данная функция проверяет не расположены ли какие-либо точки внутреннего полигона близко к сторонам внешнего полигона
-        }
-
-        for(size_t i = 0; i < outVals.size(); i++)      // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
-        {
-            if(!(testInVals.isContains(outVals.at(i))))
+            if(outVals.size() > 3)
             {
-                outVals.erase(outVals.begin() + i);
-                i--;
-            }
-        }
-
-        for(size_t i = 0; i < outVals.size(); i++)      // Проверяем не пересекаются ли линии внутреннего и внешнего полигонов
-        {
-            testLine_1.p1 = outVals.at(i);
-            if(i == outVals.size() - 1)
-            {
-                testLine_1.p2 = outVals.at(0);
-            }
-            else
-            {
-                testLine_1.p2 = outVals.at(i + 1);
+                filterLittlePolyLines(&outVals, deltaTh);                   // Данная функция проверяет нет ли во внутреннем полигоне особо малых отрезков
+                isLineInsideIntercept(&outVals);                            // Данная функция ищете пересечения линий в полигоне "через одну"
+                filterNormalDistances(inVals, &outVals, deltaTh);           // Данная функция проверяет не расположены ли какие-либо точки внутреннего полигона близко к сторонам внешнего полигона
             }
 
-            for(size_t t = 0; t < testInVals.size(); t++)
+            for(size_t i = 0; i < outVals.size(); i++)      // Проверяем все ли точки внутреннего полигона находятся внутри внешнего полигона
             {
-                testLine_2.p1 = testInVals.at(t);
-                if(t == testInVals.size() - 1)
+                if(!(testInVals.isContains(outVals.at(i))))
                 {
-                    testLine_2.p2 = testInVals.at(0);
+                    outVals.erase(outVals.begin() + i);
+                    i--;
+                }
+            }
+
+            for(size_t i = 0; i < outVals.size(); i++)      // Проверяем не пересекаются ли линии внутреннего и внешнего полигонов
+            {
+                testLine_1.p1 = outVals.at(i);
+                if(i == outVals.size() - 1)
+                {
+                    testLine_1.p2 = outVals.at(0);
                 }
                 else
                 {
-                    testLine_2.p2 = testInVals.at(t + 1);
+                    testLine_1.p2 = outVals.at(i + 1);
                 }
 
-                if(testLine_1.isIntersects(testLine_2))
+                for(size_t t = 0; t < testInVals.size(); t++)
                 {
-                    outVals.clear();
-                    break;
+                    testLine_2.p1 = testInVals.at(t);
+                    if(t == testInVals.size() - 1)
+                    {
+                        testLine_2.p2 = testInVals.at(0);
+                    }
+                    else
+                    {
+                        testLine_2.p2 = testInVals.at(t + 1);
+                    }
+
+                    if(testLine_1.isIntersects(testLine_2))
+                    {
+                        outVals.clear();
+                        break;
+                    }
                 }
             }
+
+            if(!isRegular(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
         }
-
-        if(!isRegular(outVals))  outVals.clear();          // Проверяем нет ли пересечений во внутреннем полигоне
-
     }
     else
     {
@@ -814,8 +816,8 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
 
     angleC = constants::kPi<double>() - angleB - angleA;                   // Расчёт параметров треугольника закончен
 
-    bisLen = deltaTh / (cos(constants::kHalfPi<double>() - constants::kHalf<double>() * angleB));       // Длина биссектрисы
-    testLine = 0.1 * deltaTh;   // Длина тест-линии для определения типа угла внутренний/внешний
+    bisLen = abs(deltaTh) / (cos(constants::kHalfPi<double>() - constants::kHalf<double>() * angleB));       // Длина биссектрисы
+    testLine = 0.1 * abs(deltaTh);   // Длина тест-линии для определения типа угла внутренний/внешний
 
     bisAngle = calcAngle(pointA, pointB, pointC);   // Угол биссектрисы относительно оси Х
 
@@ -833,14 +835,25 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
     testRoute.erase(testRoute.begin() + pointNum);
     bool pointBState = testRoute.isContains(pointB);
 
+    pointBState = deltaTh >= 0 ? pointBState : !pointBState;
+
     if(pointBState)
     {
+        candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
+        candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+
+        candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
+        candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
+
         if(angleB < 0.5)
         {
             if(pointNum == 0)
             {
                 return Status::ZeroInsideSharp;
             }
+
+            if(deltaTh < 0) bisAngle += constants::kPi<double>();
+
             Point pointInter_1;
             Point pointInter_2;
             Point pointInter_3;
@@ -851,8 +864,6 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
             Line testLine_1;
             Line testLine_2;
             Line testLine_3;
-            candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
 
             pointInter_1.x = deltaTh * cos(bisAngle - constants::kPi<double>()) + pointB.x;
             pointInter_1.y = deltaTh * sin(bisAngle - constants::kPi<double>()) + pointB.y;
@@ -922,11 +933,10 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
         }
         else
         {
-            candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
-            candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+            pointBState = m_inRoute->isContains(candidante_1);
 
-            candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
+            pointBState = deltaTh >= 0 ? pointBState : !pointBState;
+            pointState = deltaTh >= 0 ? pointState : !pointState;
 
             if((m_inRoute->isContains(candidante_1)) && (pointState))
             {
@@ -953,6 +963,14 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
         Line shortLine;
         Line nextLine;
         LineEquation nextLineCoef;
+
+        if(deltaTh < 0) bisAngle += constants::kPi<double>();
+
+        candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
+        candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
+
+        candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
+        candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
 
         if(m_inRoute->size() > 3)
         {
@@ -992,14 +1010,8 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
                 heightIntersectPoint.x = nextLine.p1.x;
             }
         }
-        if(triangleHeight > (2 * deltaTh))
+        if(triangleHeight > (2 * abs(deltaTh)))
         {
-            candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
-            candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
-
-            candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
-            candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
-
             if((m_inRoute->isContains(candidante_1)) && (pointState))
             {
                 resultPoint.x = candidante_1.x;
@@ -1019,11 +1031,17 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
             {
                 if(m_inRoute->size() > 3)
                 {
-
-                    if(sideB >= (1 * deltaTh))
+                    if(deltaTh >= 0)
                     {
-                        m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
-                        m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        if(sideB >= (1 * deltaTh))
+                        {
+                            m_inRoute->emplace(m_inRoute->begin() + pointNum, heightIntersectPoint);
+                            m_inRoute->erase(m_inRoute->begin() + pointNum + 1);
+                        }
+                        else
+                        {
+                            m_inRoute->erase(m_inRoute->begin() + pointNum);
+                        }
                     }
                     else
                     {
@@ -1039,12 +1057,6 @@ Polygon::Status util::math::Polygon::parseAngle(int pointNum, double deltaTh, Po
             }
             else
             {
-                candidante_1.x = bisLen * cos(bisAngle) + pointB.x;
-                candidante_1.y = bisLen * sin(bisAngle) + pointB.y;
-
-                candidante_2.x = bisLen * cos(bisAngle - constants::kPi<double>()) + pointB.x;
-                candidante_2.y = bisLen * sin(bisAngle - constants::kPi<double>()) + pointB.y;
-
                 if((m_inRoute->isContains(candidante_1)) && (pointState))
                 {
                     resultPoint.x = candidante_1.x;
