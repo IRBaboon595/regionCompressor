@@ -406,6 +406,8 @@ util::math::Polygon util::math::Polygon::adjusted(double deltaTh) const
     Line testLine_2;
     Status state;
 
+    deltaTh *= -1;
+
     if(isRegular(inVals))   // Нет ли пересечений в исходном полигоне
     {
         for(quint32 i = 0; i < inVals.size(); i++)     // Отработка каждой вершины в исходном полигоне

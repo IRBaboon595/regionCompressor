@@ -1214,6 +1214,8 @@ inline std::vector<Point> parseRoute(std::vector<Point> inVals, double deltaTh, 
     Status state;
     double tempLen = 0;
 
+    deltaTh *= -1;
+
     if(filterVect(inVals))   // Нет ли пересечений в исходном полигоне
     {
         /*for(quint32 i = 0; i < inVals.size(); i++)     // Отработка каждой вершины в исходном полигоне
